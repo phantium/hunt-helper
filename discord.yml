@@ -1,0 +1,14 @@
+discord:
+  # token: MTA4MjI4ODYzNzE2Njc2MDAyNw.GQ3MSM.OPWz8gnCXsKjewmDmb6pPbhao8sFKZTnHaXUz0
+  token: MTA4NDU3NDgxODYxMzA4MDA3NA.GcTBx6.V8ZSnaAm176tzbLL1a5pmphIyugSrQZUiNM6LU
+
+database:
+  username: discordbot
+  database: discordbot
+  password: 7SiKre0otB
+  host: 127.0.0.1
+  port: 3306
+  timeout: 10s
+
+# CREATE USER 'discordbot'@'127.0.0.1' IDENTIFIED BY '7SiKre0otB';
+# GRANT ALL PRIVILEGES ON discordbot.* TO 'discordbot'@'127.0.0.1';
