@@ -367,11 +367,93 @@ var (
 				}()
 			}
 		},
+		"config_fag_channels": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			channels := []discordgo.MessageComponent{
+				discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.Button{
+							Label:    "Use Single LFG Channel",
+							CustomID: "config_single_lfg",
+							Style:    discordgo.PrimaryButton,
+						},
+						discordgo.Button{
+							Label:    "Use Multiple LFG Channels",
+							CustomID: "config_multiple_lfg",
+							Style:    discordgo.DangerButton,
+						},
+					},
+				},
+			}
+
+			respond := &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content:    "One or multiple lfg channels?",
+					Components: channels,
+					Flags:      discordgo.MessageFlagsEphemeral,
+				},
+			}
+
+			s.InteractionRespond(i.Interaction, respond)
+		},
+		"config_single_lfg": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			channels := []discordgo.MessageComponent{
+				discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.TextInput{
+							Label:    "Use Single LFG Channel",
+							CustomID: "config_single_lfg",
+						},
+					},
+				},
+			}
+
+			respond := &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content:    "Configure one lfg channel",
+					Components: channels,
+					Flags:      discordgo.MessageFlagsEphemeral,
+				},
+			}
+
+			s.InteractionRespond(i.Interaction, respond)
+		},
+		"cfg_find_a_game": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			// guild := orm.GetGuildConfig(i.GuildID)
+			fag_config := []discordgo.MessageComponent{
+				discordgo.ActionsRow{
+					Components: []discordgo.MessageComponent{
+						discordgo.Button{
+							Label:    "Configure channels",
+							CustomID: "config_fag_channels",
+							Style:    discordgo.PrimaryButton,
+						},
+						discordgo.Button{
+							Label:    "Configure game request timeout",
+							CustomID: "config_game_request_timeout",
+							Style:    discordgo.SuccessButton,
+						},
+					},
+				},
+			}
+
+			respond := &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content:    "Configure Find A Game",
+					Components: fag_config,
+					Flags:      discordgo.MessageFlagsEphemeral,
+				},
+			}
+
+			s.InteractionRespond(i.Interaction, respond)
+		},
 	}
+	// slash commands
 	CommandsHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"dungeon_finder": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			if !common.MemberHasPermission(s, i.GuildID, i.Member.User.ID, discordgo.PermissionAdministrator) ||
-				i.Member.User.ID == "76048145347252224" {
+			if !common.MemberHasPermission(s, i.GuildID, i.Member.User.ID, discordgo.PermissionAdministrator) {
 
 				respond := &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -410,6 +492,47 @@ var (
 					Data: &discordgo.InteractionResponseData{
 						Content:    "Dungeon, co-op and event game finder, choose your option.",
 						Components: initial_components,
+					},
+				}
+				s.InteractionRespond(i.Interaction, respond)
+			}
+		},
+		"hh_config": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			if !common.MemberHasPermission(s, i.GuildID, i.Member.User.ID, discordgo.PermissionAdministrator) {
+
+				respond := &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "Sorry, you are not allowed to use this command",
+						Flags:   discordgo.MessageFlagsEphemeral,
+					},
+				}
+				s.InteractionRespond(i.Interaction, respond)
+
+			} else {
+				initial_components := []discordgo.MessageComponent{
+					discordgo.ActionsRow{
+						Components: []discordgo.MessageComponent{
+							discordgo.Button{
+								CustomID: "cfg_find_a_game",
+								Label:    "Find A Game",
+								Style:    discordgo.PrimaryButton,
+							},
+							discordgo.Button{
+								CustomID: "cfg_requests_board",
+								Label:    "Requests board",
+								Style:    discordgo.DangerButton,
+							},
+						},
+					},
+				}
+
+				respond := &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content:    "Hunt Helper guild configuration",
+						Components: initial_components,
+						Flags:      discordgo.MessageFlagsEphemeral,
 					},
 				}
 				s.InteractionRespond(i.Interaction, respond)

@@ -79,7 +79,6 @@ func RunDiscordBot() {
 		// new(slashcommands.BoardPost),
 		new(slashcommands.CommandPlayerID),
 		new(slashcommands.CommandPlayerIDReverse),
-		new(slashcommands.BotConfig),
 	))
 
 	defer k.Unregister()

@@ -34,6 +34,17 @@ func GuildCreate(s *discordgo.Session, gc *discordgo.GuildCreate) {
 		log.Fatalf("Cannot create slash command /dungeon_finder: %v", err)
 	}
 
-	log.Infof("Created command /dungeon_finder on server with guild ID: %s (Name: %s) (Owner: %s)!", gc.Guild.ID, gc.Guild.Name, gc.Guild.OwnerID)
+	// log.Infof("Created command /dungeon_finder on server with guild ID: %s (Name: %s) (Owner: %s)!", gc.Guild.ID, gc.Guild.Name, gc.Guild.OwnerID)
+
+	// hh_config command
+	_, err = s.ApplicationCommandCreate(s.State.Application.ID, gc.Guild.ID, &discordgo.ApplicationCommand{
+		Name:        "hh_config",
+		Description: "Hunt Helper configuration",
+	})
+	if err != nil {
+		log.Fatalf("Cannot create slash command /hh_config: %v", err)
+	}
+
+	// log.Infof("Created command /hh_config on server with guild ID: %s (Name: %s) (Owner: %s)!", gc.Guild.ID, gc.Guild.Name, gc.Guild.OwnerID)
 
 }
