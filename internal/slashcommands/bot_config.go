@@ -47,36 +47,27 @@ func (c *BotConfig) Run(ctx ken.Context) (err error) {
 		Description: "Hunt Helper guild configuration",
 	})
 
-	channel_select := ctx.FollowupEmbed(&discordgo.MessageEmbed{
+	channel_select := ctx.FollowUpEmbed(&discordgo.MessageEmbed{
 		Description: "Setup your channels",
 	})
-	channel_select := []discordgo.MessageComponent{
-		discordgo.ActionsRow{
-			Components: []discordgo.MessageComponent{
-				discordgo.Button{
-					Label:    "Use single LFG channel",
-					CustomID: "config_single_lfg",
-					Style:    discordgo.PrimaryButton,
-				},
-				discordgo.Button{
-					Label:    "Use multiple LFG channels",
-					CustomID: "config_multiple_lfg",
-					Style:    discordgo.DangerButton,
-				}, func(ctx ken.ComponentContext) bool {
-					return true
-				}
-			},
-		},
-	}
-
-	// channels := &discordgo.InteractionResponse{
-	// 	Type: discordgo.InteractionResponseChannelMessageWithSource,
-	// 	Data: &discordgo.InteractionResponseData{
-	// 		Content:    "Setup your channels:",
-	// 		Components: channel_select,
-	// 		Flags:      discordgo.MessageFlagsEphemeral,
-	// 	},
-	// }
+	channel_select.AddComponents(func(cb *ken.ComponentBuilder) {
+		cb.AddActionsRow(func(b ken.ComponentAssembler) {
+			b.Add(discordgo.Button{
+				Label:    "Use Single LFG Channel",
+				CustomID: "config_single_lfg",
+				Style:    discordgo.PrimaryButton,
+			}, func(ctx ken.ComponentContext) bool {
+				return true
+			})
+			b.Add(discordgo.Button{
+				Label:    "Use Multiple LFG Channels",
+				CustomID: "config_multiple_lfg",
+				Style:    discordgo.DangerButton,
+			}, func(ctx ken.ComponentContext) bool {
+				return true
+			})
+		})
+	})
 
 	b.AddComponents(func(cb *ken.ComponentBuilder) {
 		cb.AddActionsRow(func(b ken.ComponentAssembler) {
@@ -84,7 +75,7 @@ func (c *BotConfig) Run(ctx ken.Context) (err error) {
 				CustomID: "config_channels",
 				Label:    "Configure channels",
 			}, func(ctx ken.ComponentContext) bool {
-				ctx.Respond(channels)
+				channel_select.Send()
 				return true
 			})
 			b.Add(discordgo.Button{
@@ -93,6 +84,7 @@ func (c *BotConfig) Run(ctx ken.Context) (err error) {
 			}, func(ctx ken.ComponentContext) bool {
 				return true
 			})
+
 		})
 	})
 
