@@ -36,6 +36,199 @@ var game_request_timeout time.Duration = 30
 
 var (
 	ComponentsHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"select_dungeon": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+
+			fagtime := orm.GetFindAGame(i.Member.User.ID, i.GuildID)
+			if fagtime.CreatedAt.IsZero() == false && !time.Now().After(fagtime.CreatedAt.Add(game_request_minutes*time.Minute)) {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "You can request a game every 10 minutes.",
+						Flags:   discordgo.MessageFlagsEphemeral,
+					},
+				})
+			} else {
+				minValues := 1
+				dungeon_components := []discordgo.MessageComponent{
+					discordgo.ActionsRow{
+						Components: []discordgo.MessageComponent{
+							discordgo.SelectMenu{
+								CustomID:    "dungeon_finder",
+								Placeholder: "Choose your dungeons for a run:",
+								// This is where confusion comes from. If you don't specify these things you will get single item select.
+								// These fields control the minimum and maximum amount of selected items.
+								MinValues: &minValues,
+								MaxValues: 3,
+								Options: []discordgo.SelectMenuOption{
+									{
+										Label: "Dragon",
+										Value: "Dragon",
+										// Default works the same for multi-select menus.
+										// Default: false,
+										Emoji: discordgo.ComponentEmoji{
+											Name: "dragon",
+											ID:   "1082313506700935199",
+										},
+									},
+									{
+										Label: "Kraken",
+										Value: "Kraken",
+										Emoji: discordgo.ComponentEmoji{
+											Name: "kraken",
+											ID:   "1082313504901578822",
+										},
+									},
+									{
+										Label: "Yeti",
+										Value: "Yeti",
+										Emoji: discordgo.ComponentEmoji{
+											Name: "yeti",
+											ID:   "1082333118729556038",
+										},
+									},
+									{
+										Label: "Maze",
+										Value: "Maze",
+										Emoji: discordgo.ComponentEmoji{
+											Name: "maze",
+											ID:   "1082313502208827422",
+										},
+									},
+									{
+										Label: "Abyssal",
+										Value: "Abyssal",
+										Emoji: discordgo.ComponentEmoji{
+											Name: "abyssal",
+											ID:   "1082313499922944000",
+										},
+									},
+								},
+							},
+						},
+					},
+					discordgo.ActionsRow{
+						Components: []discordgo.MessageComponent{
+							discordgo.SelectMenu{
+								CustomID:    "dungeon_finder_carry",
+								Placeholder: "Choose your dungeons for a carry:",
+								// This is where confusion comes from. If you don't specify these things you will get single item select.
+								// These fields control the minimum and maximum amount of selected items.
+								MinValues: &minValues,
+								MaxValues: 3,
+								Options: []discordgo.SelectMenuOption{
+									{
+										Label: "Dragon",
+										Value: "Dragon",
+										// Default works the same for multi-select menus.
+										// Default: false,
+										Emoji: discordgo.ComponentEmoji{
+											Name: "dragon",
+											ID:   "1082313506700935199",
+										},
+									},
+									{
+										Label: "Kraken",
+										Value: "Kraken",
+										Emoji: discordgo.ComponentEmoji{
+											Name: "kraken",
+											ID:   "1082313504901578822",
+										},
+									},
+									{
+										Label: "Yeti",
+										Value: "Yeti",
+										Emoji: discordgo.ComponentEmoji{
+											Name: "yeti",
+											ID:   "1082333118729556038",
+										},
+									},
+									{
+										Label: "Maze",
+										Value: "Maze",
+										Emoji: discordgo.ComponentEmoji{
+											Name: "maze",
+											ID:   "1082313502208827422",
+										},
+									},
+									{
+										Label: "Abyssal",
+										Value: "Abyssal",
+										Emoji: discordgo.ComponentEmoji{
+											Name: "abyssal",
+											ID:   "1082313499922944000",
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				respond := &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content:    "Select your dungeon(s) *up to 3* to run or be carried:",
+						Components: dungeon_components,
+						Flags:      discordgo.MessageFlagsEphemeral,
+					},
+				}
+				s.InteractionRespond(i.Interaction, respond)
+			}
+
+		},
+		"select_coop": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			guild := orm.GetGuildConfig(i.GuildID)
+			fagtime := orm.GetFindAGame(i.Member.User.ID, i.GuildID)
+			if fagtime.CreatedAt.IsZero() == false && !time.Now().After(fagtime.CreatedAt.Add(game_request_minutes*time.Minute)) {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "You can request a game every 10 minutes.",
+						Flags:   discordgo.MessageFlagsEphemeral,
+					},
+				})
+			} else {
+				respond := &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "Thank you, your co-op request has been posted!",
+						Flags:   discordgo.MessageFlagsEphemeral,
+					},
+				}
+
+				s.InteractionRespond(i.Interaction, respond)
+				s.ChannelMessageSend(guild.ChannelBrowse, i.Member.Mention()+" wants a co-op run :id: "+orm.GetPlayerID(i.Member.User.ID))
+				// orm.AddFindAGame(dg_msg.ID, i.ChannelID, i.GuildID, i.Member.User.ID, , "run")
+			}
+
+		},
+		"select_event": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			guild := orm.GetGuildConfig(i.GuildID)
+			fagtime := orm.GetFindAGame(i.Member.User.ID, i.GuildID)
+			if fagtime.CreatedAt.IsZero() == false && !time.Now().After(fagtime.CreatedAt.Add(game_request_minutes*time.Minute)) {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "You can request a game every 10 minutes.",
+						Flags:   discordgo.MessageFlagsEphemeral,
+					},
+				})
+			} else {
+				respond := &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "Thank you, your event request has been posted!",
+						Flags:   discordgo.MessageFlagsEphemeral,
+					},
+				}
+
+				s.InteractionRespond(i.Interaction, respond)
+				dg_msg, _ := s.ChannelMessageSend(guild.ChannelBrowse, i.Member.Mention()+" wants a team mate for this weeks Discord event :id: "+orm.GetPlayerID(i.Member.User.ID))
+				orm.AddFindAGame(dg_msg.ID, i.ChannelID, i.GuildID, i.Member.User.ID, []string{"event"}, "run")
+			}
+
+		},
+
 		"dungeon_finder": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			guild := orm.GetGuildConfig(i.GuildID)
 			data := i.MessageComponentData()
@@ -177,131 +370,36 @@ var (
 	}
 	CommandsHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"dungeon_finder": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			if !common.MemberHasPermission(s, i.GuildID, i.Member.User.ID, discordgo.PermissionAdministrator) {
-				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			if !common.MemberHasPermission(s, i.GuildID, i.Member.User.ID, discordgo.PermissionAdministrator) ||
+				i.Member.User.ID == "76048145347252224" {
+
+				respond := &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
 						Content: "Sorry, you are not allowed to use this command",
 						Flags:   discordgo.MessageFlagsEphemeral,
 					},
-				})
-				if err != nil {
-					panic(err)
 				}
+				s.InteractionRespond(i.Interaction, respond)
 
 			} else {
-				minValues := 1
-
-				components := []discordgo.MessageComponent{
+				initial_components := []discordgo.MessageComponent{
 					discordgo.ActionsRow{
 						Components: []discordgo.MessageComponent{
-							discordgo.SelectMenu{
-								CustomID:    "dungeon_finder",
-								Placeholder: "Choose your dungeons for a run:",
-								// This is where confusion comes from. If you don't specify these things you will get single item select.
-								// These fields control the minimum and maximum amount of selected items.
-								MinValues: &minValues,
-								MaxValues: 3,
-								Options: []discordgo.SelectMenuOption{
-									{
-										Label: "Dragon",
-										Value: "Dragon",
-										// Default works the same for multi-select menus.
-										// Default: false,
-										Emoji: discordgo.ComponentEmoji{
-											Name: "dragon",
-											ID:   "1082313506700935199",
-										},
-									},
-									{
-										Label: "Kraken",
-										Value: "Kraken",
-										Emoji: discordgo.ComponentEmoji{
-											Name: "kraken",
-											ID:   "1082313504901578822",
-										},
-									},
-									{
-										Label: "Yeti",
-										Value: "Yeti",
-										Emoji: discordgo.ComponentEmoji{
-											Name: "yeti",
-											ID:   "1082333118729556038",
-										},
-									},
-									{
-										Label: "Maze",
-										Value: "Maze",
-										Emoji: discordgo.ComponentEmoji{
-											Name: "maze",
-											ID:   "1082313502208827422",
-										},
-									},
-									{
-										Label: "Abyssal",
-										Value: "Abyssal",
-										Emoji: discordgo.ComponentEmoji{
-											Name: "abyssal",
-											ID:   "1082313499922944000",
-										},
-									},
-								},
+							discordgo.Button{
+								Label:    "Dungeon",
+								CustomID: "select_dungeon",
+								Style:    discordgo.PrimaryButton,
 							},
-						},
-					},
-					discordgo.ActionsRow{
-						Components: []discordgo.MessageComponent{
-							discordgo.SelectMenu{
-								CustomID:    "dungeon_finder_carry",
-								Placeholder: "Choose your dungeons for a carry:",
-								// This is where confusion comes from. If you don't specify these things you will get single item select.
-								// These fields control the minimum and maximum amount of selected items.
-								MinValues: &minValues,
-								MaxValues: 3,
-								Options: []discordgo.SelectMenuOption{
-									{
-										Label: "Dragon",
-										Value: "Dragon",
-										// Default works the same for multi-select menus.
-										// Default: false,
-										Emoji: discordgo.ComponentEmoji{
-											Name: "dragon",
-											ID:   "1082313506700935199",
-										},
-									},
-									{
-										Label: "Kraken",
-										Value: "Kraken",
-										Emoji: discordgo.ComponentEmoji{
-											Name: "kraken",
-											ID:   "1082313504901578822",
-										},
-									},
-									{
-										Label: "Yeti",
-										Value: "Yeti",
-										Emoji: discordgo.ComponentEmoji{
-											Name: "yeti",
-											ID:   "1082333118729556038",
-										},
-									},
-									{
-										Label: "Maze",
-										Value: "Maze",
-										Emoji: discordgo.ComponentEmoji{
-											Name: "maze",
-											ID:   "1082313502208827422",
-										},
-									},
-									{
-										Label: "Abyssal",
-										Value: "Abyssal",
-										Emoji: discordgo.ComponentEmoji{
-											Name: "abyssal",
-											ID:   "1082313499922944000",
-										},
-									},
-								},
+							discordgo.Button{
+								Label:    "Co-op",
+								CustomID: "select_coop",
+								Style:    discordgo.DangerButton,
+							},
+							discordgo.Button{
+								Label:    "Event",
+								CustomID: "select_event",
+								Style:    discordgo.SuccessButton,
 							},
 						},
 					},
@@ -310,23 +408,11 @@ var (
 				respond := &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
-						Content:    "Use the dungeon finder to find a dungeon.",
-						Components: components,
+						Content:    "Dungeon, co-op and event game finder, choose your option.",
+						Components: initial_components,
 					},
 				}
 				s.InteractionRespond(i.Interaction, respond)
-
-				// go func() {
-				// 	for {
-				// 		time.Sleep(60 * time.Second)
-				// 		check_response, err := s.InteractionResponse(i.Interaction)
-				// 		if err != nil {
-				// 			break
-				// 		}
-				// 		s.InteractionResponseEdit(i.Interaction, respond)
-
-				// 	}
-				// }()
 			}
 		},
 	}

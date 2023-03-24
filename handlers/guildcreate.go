@@ -34,23 +34,6 @@ func GuildCreate(s *discordgo.Session, gc *discordgo.GuildCreate) {
 		log.Fatalf("Cannot create slash command /dungeon_finder: %v", err)
 	}
 
-	// defer s.ApplicationCommandDelete(s.State.Application.ID, gc.Guild.ID, df.ID)
-
 	log.Infof("Created command /dungeon_finder on server with guild ID: %s (Name: %s) (Owner: %s)!", gc.Guild.ID, gc.Guild.Name, gc.Guild.OwnerID)
 
-	// ef := []*discordgo.MessageEmbedField{
-	// 	{
-	// 		Name:   "Greetings!",
-	// 		Value:  "I am " + s.State.Application.Name + " and I am here to help with Hunt Royale!",
-	// 		Inline: true,
-	// 	},
-	// }
-	// e := &discordgo.MessageEmbed{
-	// 	Type:   discordgo.EmbedTypeRich,
-	// 	Title:  s.State.Application.Name + " has arrived!",
-	// 	Fields: ef,
-	// }
-	// if _, err := s.ChannelMessageSendEmbed(gc.Guild.SystemChannelID, e); err != nil {
-	// 	log.Errorf("Failed to send introduction message for %s (GuildID: %s)", gc.Guild.Name, gc.Guild.ID)
-	// }
 }

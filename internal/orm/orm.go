@@ -132,6 +132,14 @@ func GetMemberWithPlayerID(member_id string) (*PlayerIDs, error) {
 	return playerids, nil
 }
 
+func GetMemberIDWithPlayerID(player_id string) (*PlayerIDs, error) {
+	var playerids *PlayerIDs
+	if err := _db.Where("player_id = ?", player_id).Find(&playerids).Error; err != nil {
+		return nil, err
+	}
+	return playerids, nil
+}
+
 func GetMembersCount() string {
 	var playerids []*PlayerIDs
 	result := _db.Find(&playerids)
@@ -375,4 +383,9 @@ func GetFindAGameAbyssal() string {
 func GetPlayerID(member_id string) string {
 	player_id, _ := GetMemberWithPlayerID(member_id)
 	return player_id.PlayerID
+}
+
+func GetMemberID(player_id string) string {
+	member_id, _ := GetMemberIDWithPlayerID(player_id)
+	return member_id.MemberID
 }

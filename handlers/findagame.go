@@ -10,6 +10,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/exp/slices"
 )
 
 func ConfigureBrowseChannelID(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -148,6 +149,55 @@ func ReactToFindAGame(s *discordgo.Session, member_id string, member_id_poster s
 	// 	time.Sleep(game_request_timeout * time.Minute)
 	// 	s.ChannelMessageEdit(priv_chan.ID, react_msg.ID, fmt.Sprintf("Message from server %s:\nHunt Royale Dungeon Finder message has expired.", guild.GuildName))
 	// }()
+}
+
+func FindAGameEmojiResponse(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
+	guild_info := orm.GetGuild(r.GuildID)
+	// this means we are in the find a game channel, and we care what is being reacted
+	// skip if the bot is reacting
+	if r.UserID == s.State.User.ID {
+		return
+	}
+
+	// check if we care about this emoji at all
+	allowedemojis := []string{"dragon", "kraken", "yeti", "maze", "abyssal"}
+	if !slices.Contains(allowedemojis, r.Emoji.Name) {
+		return
+	}
+
+	// check if user already responded to the message
+	reaction := orm.GetFindAGameReaction(r.MessageID, r.UserID, r.GuildID)
+	if reaction.CreatedAt.IsZero() == false && !time.Now().After(reaction.CreatedAt.Add(30*time.Minute)) {
+		msgref := &discordgo.MessageReference{
+			ChannelID: r.ChannelID,
+			MessageID: r.MessageID,
+			GuildID:   r.GuildID,
+		}
+		react_msg, _ := s.ChannelMessageSendReply(r.ChannelID, fmt.Sprintf("<@%s> you have already reacted to this game request!", r.UserID), msgref)
+		go func() {
+			time.Sleep(30 * time.Second)
+			s.ChannelMessageDelete(r.ChannelID, react_msg.ID)
+		}()
+		return
+	}
+
+	// prevent user responding to their own request
+	fag := orm.GetFindAGameByMsgID(r.MessageID, r.GuildID)
+	if r.UserID == fag.UserID {
+		msgref := &discordgo.MessageReference{
+			ChannelID: r.ChannelID,
+			MessageID: r.MessageID,
+			GuildID:   r.GuildID,
+		}
+		react_msg, _ := s.ChannelMessageSendReply(r.ChannelID, fmt.Sprintf("<@%s> you cannot respond to your own request!", r.UserID), msgref)
+		go func() {
+			time.Sleep(30 * time.Second)
+			s.ChannelMessageDelete(r.ChannelID, react_msg.ID)
+		}()
+		return
+	}
+	ReactToFindAGame(s, r.UserID, fag.UserID, guild_info, r.Emoji.Name)
+	orm.AddFindAGameReaction(r.MessageID, r.GuildID, fag.UserID, r.Emoji.Name)
 }
 
 // func OnMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
