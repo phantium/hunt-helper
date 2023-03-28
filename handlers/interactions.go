@@ -3,6 +3,7 @@ package handlers
 import (
 	"discordbot/internal/common"
 	"discordbot/internal/orm"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -20,6 +21,24 @@ var emojis = []string{
 	"abyssal",
 }
 
+var emojisv2 = map[string]string{
+	"dragon":  "🐉",
+	"kraken":  "🐙",
+	"yeti":    "⛄",
+	"maze":    "🏰",
+	"abyssal": "😈",
+	"event":   "💬",
+}
+
+var emojisv2_id = map[string]string{
+	"dragon":  "1090337829499973632",
+	"kraken":  "1090338068910837830",
+	"yeti":    "1090338180328333462",
+	"maze":    "1090338293708759140",
+	"abyssal": "1090338381587820575",
+	"event":   "1090338557140410429",
+}
+
 func GetEmojis(s *discordgo.Session, names []string, guild_id string) map[string]string {
 	emojis, _ := s.GuildEmojis(guild_id)
 	emoji_result := map[string]string{}
@@ -31,19 +50,19 @@ func GetEmojis(s *discordgo.Session, names []string, guild_id string) map[string
 	return emoji_result
 }
 
-var game_request_minutes time.Duration = 15
-var game_request_timeout time.Duration = 30
+var game_request_minutes time.Duration = 15 * time.Minute
+var game_request_timeout time.Duration = 30 * time.Minute
 
 var (
 	ComponentsHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"select_dungeon": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 			fagtime := orm.GetFindAGame(i.Member.User.ID, i.GuildID)
-			if fagtime.CreatedAt.IsZero() == false && !time.Now().After(fagtime.CreatedAt.Add(game_request_minutes*time.Minute)) {
+			if fagtime.CreatedAt.IsZero() == false && !time.Now().After(fagtime.CreatedAt.Add(game_request_minutes)) {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
-						Content: "You can request a game every 10 minutes.",
+						Content: fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", game_request_minutes.Minutes(), time.Now().Sub(fagtime.CreatedAt.Add(game_request_minutes)).Minutes()),
 						Flags:   discordgo.MessageFlagsEphemeral,
 					},
 				})
@@ -66,40 +85,35 @@ var (
 										// Default works the same for multi-select menus.
 										// Default: false,
 										Emoji: discordgo.ComponentEmoji{
-											Name: "dragon",
-											ID:   "1082313506700935199",
+											Name: emojisv2["dragon"],
 										},
 									},
 									{
 										Label: "Kraken",
 										Value: "Kraken",
 										Emoji: discordgo.ComponentEmoji{
-											Name: "kraken",
-											ID:   "1082313504901578822",
+											Name: emojisv2["kraken"],
 										},
 									},
 									{
 										Label: "Yeti",
 										Value: "Yeti",
 										Emoji: discordgo.ComponentEmoji{
-											Name: "yeti",
-											ID:   "1082333118729556038",
+											Name: emojisv2["yeti"],
 										},
 									},
 									{
 										Label: "Maze",
 										Value: "Maze",
 										Emoji: discordgo.ComponentEmoji{
-											Name: "maze",
-											ID:   "1082313502208827422",
+											Name: emojisv2["maze"],
 										},
 									},
 									{
 										Label: "Abyssal",
 										Value: "Abyssal",
 										Emoji: discordgo.ComponentEmoji{
-											Name: "abyssal",
-											ID:   "1082313499922944000",
+											Name: emojisv2["abyssal"],
 										},
 									},
 								},
@@ -122,40 +136,35 @@ var (
 										// Default works the same for multi-select menus.
 										// Default: false,
 										Emoji: discordgo.ComponentEmoji{
-											Name: "dragon",
-											ID:   "1082313506700935199",
+											Name: emojisv2["dragon"],
 										},
 									},
 									{
 										Label: "Kraken",
 										Value: "Kraken",
 										Emoji: discordgo.ComponentEmoji{
-											Name: "kraken",
-											ID:   "1082313504901578822",
+											Name: emojisv2["kraken"],
 										},
 									},
 									{
 										Label: "Yeti",
 										Value: "Yeti",
 										Emoji: discordgo.ComponentEmoji{
-											Name: "yeti",
-											ID:   "1082333118729556038",
+											Name: emojisv2["yeti"],
 										},
 									},
 									{
 										Label: "Maze",
 										Value: "Maze",
 										Emoji: discordgo.ComponentEmoji{
-											Name: "maze",
-											ID:   "1082313502208827422",
+											Name: emojisv2["maze"],
 										},
 									},
 									{
 										Label: "Abyssal",
 										Value: "Abyssal",
 										Emoji: discordgo.ComponentEmoji{
-											Name: "abyssal",
-											ID:   "1082313499922944000",
+											Name: emojisv2["abyssal"],
 										},
 									},
 								},
@@ -179,11 +188,11 @@ var (
 		"select_coop": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			guild := orm.GetGuildConfig(i.GuildID)
 			fagtime := orm.GetFindAGame(i.Member.User.ID, i.GuildID)
-			if fagtime.CreatedAt.IsZero() == false && !time.Now().After(fagtime.CreatedAt.Add(game_request_minutes*time.Minute)) {
+			if fagtime.CreatedAt.IsZero() == false && !time.Now().After(fagtime.CreatedAt.Add(game_request_minutes)) {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
-						Content: "You can request a game every 10 minutes.",
+						Content: fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", game_request_minutes.Minutes(), time.Now().Sub(fagtime.CreatedAt.Add(game_request_minutes)).Minutes()),
 						Flags:   discordgo.MessageFlagsEphemeral,
 					},
 				})
@@ -205,11 +214,11 @@ var (
 		"select_event": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			guild := orm.GetGuildConfig(i.GuildID)
 			fagtime := orm.GetFindAGame(i.Member.User.ID, i.GuildID)
-			if fagtime.CreatedAt.IsZero() == false && !time.Now().After(fagtime.CreatedAt.Add(game_request_minutes*time.Minute)) {
+			if fagtime.CreatedAt.IsZero() == false && !time.Now().After(fagtime.CreatedAt.Add(game_request_minutes)) {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
-						Content: "You can request a game every 10 minutes.",
+						Content: fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", game_request_minutes.Minutes(), time.Now().Sub(fagtime.CreatedAt.Add(game_request_minutes)).Minutes()),
 						Flags:   discordgo.MessageFlagsEphemeral,
 					},
 				})
@@ -243,11 +252,11 @@ var (
 						Flags:   discordgo.MessageFlagsEphemeral,
 					},
 				})
-			} else if fagtime.CreatedAt.IsZero() == false && !time.Now().After(fagtime.CreatedAt.Add(game_request_minutes*time.Minute)) {
+			} else if fagtime.CreatedAt.IsZero() == false && !time.Now().After(fagtime.CreatedAt.Add(game_request_minutes)) {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
-						Content: "You can request a find a game every 10 minutes.",
+						Content: fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", game_request_minutes.Minutes(), time.Now().Sub(fagtime.CreatedAt.Add(game_request_minutes)).Minutes()),
 						Flags:   discordgo.MessageFlagsEphemeral,
 					},
 				})
@@ -284,15 +293,15 @@ var (
 				}
 				dg_msg, _ := s.ChannelMessageSend(guild.ChannelBrowse, i.Member.Mention()+" wants a dungeon run for: "+strings.Join(final_role_ids, ", ")+" :id: "+orm.GetPlayerID(i.Member.User.ID))
 				orm.AddFindAGame(dg_msg.ID, i.ChannelID, i.GuildID, i.Member.User.ID, final_named_roles, "run")
-				emoji_list := GetEmojis(s, emojis, i.GuildID)
+				// emoji_list := GetEmojis(s, emojis, i.GuildID)
 				for _, role := range final_named_roles {
-					err := s.MessageReactionAdd(dg_msg.ChannelID, dg_msg.ID, emoji_list[role])
+					err := s.MessageReactionAdd(dg_msg.ChannelID, dg_msg.ID, emojisv2[role])
 					if err != nil {
 						log.Println(err)
 					}
 				}
 				go func() {
-					time.Sleep(game_request_timeout * time.Minute)
+					time.Sleep(game_request_timeout)
 					orm.DeleteFindAGame(i.Member.User.ID, i.GuildID)
 					s.ChannelMessageDelete(dg_msg.ChannelID, dg_msg.ID)
 				}()
@@ -312,11 +321,11 @@ var (
 						Flags:   discordgo.MessageFlagsEphemeral,
 					},
 				})
-			} else if fagtime.CreatedAt.IsZero() == false && !time.Now().After(fagtime.CreatedAt.Add(game_request_minutes*time.Minute)) {
+			} else if fagtime.CreatedAt.IsZero() == false && !time.Now().After(fagtime.CreatedAt.Add(game_request_minutes)) {
 				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
-						Content: "You can request a find a game every 10 minutes.",
+						Content: fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", game_request_minutes.Minutes(), time.Now().Sub(fagtime.CreatedAt.Add(game_request_minutes)).Minutes()),
 						Flags:   discordgo.MessageFlagsEphemeral,
 					},
 				})
@@ -353,102 +362,102 @@ var (
 				}
 				dg_msg, _ := s.ChannelMessageSend(guild.ChannelBrowse, i.Member.Mention()+" wants a dungeon carry for: "+strings.Join(final_role_ids, ", ")+" :id: "+orm.GetPlayerID(i.Member.User.ID))
 				orm.AddFindAGame(dg_msg.ID, i.ChannelID, i.GuildID, i.Member.User.ID, final_named_roles, "carry")
-				emoji_list := GetEmojis(s, emojis, i.GuildID)
+				// emoji_list := GetEmojis(s, emojis, i.GuildID)
 				for _, role := range final_named_roles {
-					err := s.MessageReactionAdd(dg_msg.ChannelID, dg_msg.ID, emoji_list[role])
+					err := s.MessageReactionAdd(dg_msg.ChannelID, dg_msg.ID, emojisv2[role])
 					if err != nil {
 						log.Println(err)
 					}
 				}
 				go func() {
-					time.Sleep(game_request_timeout * time.Minute)
+					time.Sleep(game_request_timeout)
 					orm.DeleteFindAGame(i.Member.User.ID, i.GuildID)
 					s.ChannelMessageDelete(dg_msg.ChannelID, dg_msg.ID)
 				}()
 			}
 		},
-		"config_fag_channels": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			channels := []discordgo.MessageComponent{
-				discordgo.ActionsRow{
-					Components: []discordgo.MessageComponent{
-						discordgo.Button{
-							Label:    "Use Single LFG Channel",
-							CustomID: "config_single_lfg",
-							Style:    discordgo.PrimaryButton,
-						},
-						discordgo.Button{
-							Label:    "Use Multiple LFG Channels",
-							CustomID: "config_multiple_lfg",
-							Style:    discordgo.DangerButton,
-						},
-					},
-				},
-			}
+		// "config_fag_channels": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		// 	channels := []discordgo.MessageComponent{
+		// 		discordgo.ActionsRow{
+		// 			Components: []discordgo.MessageComponent{
+		// 				discordgo.Button{
+		// 					Label:    "Use Single LFG Channel",
+		// 					CustomID: "config_single_lfg",
+		// 					Style:    discordgo.PrimaryButton,
+		// 				},
+		// 				discordgo.Button{
+		// 					Label:    "Use Multiple LFG Channels",
+		// 					CustomID: "config_multiple_lfg",
+		// 					Style:    discordgo.DangerButton,
+		// 				},
+		// 			},
+		// 		},
+		// 	}
 
-			respond := &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content:    "One or multiple lfg channels?",
-					Components: channels,
-					Flags:      discordgo.MessageFlagsEphemeral,
-				},
-			}
+		// 	respond := &discordgo.InteractionResponse{
+		// 		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		// 		Data: &discordgo.InteractionResponseData{
+		// 			Content:    "One or multiple lfg channels?",
+		// 			Components: channels,
+		// 			Flags:      discordgo.MessageFlagsEphemeral,
+		// 		},
+		// 	}
 
-			s.InteractionRespond(i.Interaction, respond)
-		},
-		"config_single_lfg": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			channels := []discordgo.MessageComponent{
-				discordgo.ActionsRow{
-					Components: []discordgo.MessageComponent{
-						discordgo.TextInput{
-							Label:    "Use Single LFG Channel",
-							CustomID: "config_single_lfg",
-						},
-					},
-				},
-			}
+		// 	s.InteractionRespond(i.Interaction, respond)
+		// },
+		// "config_single_lfg": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		// 	channels := []discordgo.MessageComponent{
+		// 		discordgo.ActionsRow{
+		// 			Components: []discordgo.MessageComponent{
+		// 				discordgo.TextInput{
+		// 					Label:    "Use Single LFG Channel",
+		// 					CustomID: "config_single_lfg",
+		// 				},
+		// 			},
+		// 		},
+		// 	}
 
-			respond := &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content:    "Configure one lfg channel",
-					Components: channels,
-					Flags:      discordgo.MessageFlagsEphemeral,
-				},
-			}
+		// 	respond := &discordgo.InteractionResponse{
+		// 		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		// 		Data: &discordgo.InteractionResponseData{
+		// 			Content:    "Configure one lfg channel",
+		// 			Components: channels,
+		// 			Flags:      discordgo.MessageFlagsEphemeral,
+		// 		},
+		// 	}
 
-			s.InteractionRespond(i.Interaction, respond)
-		},
-		"cfg_find_a_game": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			// guild := orm.GetGuildConfig(i.GuildID)
-			fag_config := []discordgo.MessageComponent{
-				discordgo.ActionsRow{
-					Components: []discordgo.MessageComponent{
-						discordgo.Button{
-							Label:    "Configure channels",
-							CustomID: "config_fag_channels",
-							Style:    discordgo.PrimaryButton,
-						},
-						discordgo.Button{
-							Label:    "Configure game request timeout",
-							CustomID: "config_game_request_timeout",
-							Style:    discordgo.SuccessButton,
-						},
-					},
-				},
-			}
+		// 	s.InteractionRespond(i.Interaction, respond)
+		// },
+		// "cfg_find_a_game": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		// 	// guild := orm.GetGuildConfig(i.GuildID)
+		// 	fag_config := []discordgo.MessageComponent{
+		// 		discordgo.ActionsRow{
+		// 			Components: []discordgo.MessageComponent{
+		// 				discordgo.Button{
+		// 					Label:    "Configure channels",
+		// 					CustomID: "config_fag_channels",
+		// 					Style:    discordgo.PrimaryButton,
+		// 				},
+		// 				discordgo.Button{
+		// 					Label:    "Configure game request timeout",
+		// 					CustomID: "config_game_request_timeout",
+		// 					Style:    discordgo.SuccessButton,
+		// 				},
+		// 			},
+		// 		},
+		// 	}
 
-			respond := &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content:    "Configure Find A Game",
-					Components: fag_config,
-					Flags:      discordgo.MessageFlagsEphemeral,
-				},
-			}
+		// 	respond := &discordgo.InteractionResponse{
+		// 		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		// 		Data: &discordgo.InteractionResponseData{
+		// 			Content:    "Configure Find A Game",
+		// 			Components: fag_config,
+		// 			Flags:      discordgo.MessageFlagsEphemeral,
+		// 		},
+		// 	}
 
-			s.InteractionRespond(i.Interaction, respond)
-		},
+		// 	s.InteractionRespond(i.Interaction, respond)
+		// },
 	}
 	// slash commands
 	CommandsHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
@@ -497,46 +506,46 @@ var (
 				s.InteractionRespond(i.Interaction, respond)
 			}
 		},
-		"hh_config": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			if !common.MemberHasPermission(s, i.GuildID, i.Member.User.ID, discordgo.PermissionAdministrator) {
+		// "hh_config": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		// 	if !common.MemberHasPermission(s, i.GuildID, i.Member.User.ID, discordgo.PermissionAdministrator) {
 
-				respond := &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content: "Sorry, you are not allowed to use this command",
-						Flags:   discordgo.MessageFlagsEphemeral,
-					},
-				}
-				s.InteractionRespond(i.Interaction, respond)
+		// 		respond := &discordgo.InteractionResponse{
+		// 			Type: discordgo.InteractionResponseChannelMessageWithSource,
+		// 			Data: &discordgo.InteractionResponseData{
+		// 				Content: "Sorry, you are not allowed to use this command",
+		// 				Flags:   discordgo.MessageFlagsEphemeral,
+		// 			},
+		// 		}
+		// 		s.InteractionRespond(i.Interaction, respond)
 
-			} else {
-				initial_components := []discordgo.MessageComponent{
-					discordgo.ActionsRow{
-						Components: []discordgo.MessageComponent{
-							discordgo.Button{
-								CustomID: "cfg_find_a_game",
-								Label:    "Find A Game",
-								Style:    discordgo.PrimaryButton,
-							},
-							discordgo.Button{
-								CustomID: "cfg_requests_board",
-								Label:    "Requests board",
-								Style:    discordgo.DangerButton,
-							},
-						},
-					},
-				}
+		// 	} else {
+		// 		initial_components := []discordgo.MessageComponent{
+		// 			discordgo.ActionsRow{
+		// 				Components: []discordgo.MessageComponent{
+		// 					discordgo.Button{
+		// 						CustomID: "cfg_find_a_game",
+		// 						Label:    "Find A Game",
+		// 						Style:    discordgo.PrimaryButton,
+		// 					},
+		// 					discordgo.Button{
+		// 						CustomID: "cfg_requests_board",
+		// 						Label:    "Requests board",
+		// 						Style:    discordgo.DangerButton,
+		// 					},
+		// 				},
+		// 			},
+		// 		}
 
-				respond := &discordgo.InteractionResponse{
-					Type: discordgo.InteractionResponseChannelMessageWithSource,
-					Data: &discordgo.InteractionResponseData{
-						Content:    "Hunt Helper guild configuration",
-						Components: initial_components,
-						Flags:      discordgo.MessageFlagsEphemeral,
-					},
-				}
-				s.InteractionRespond(i.Interaction, respond)
-			}
-		},
+		// 		respond := &discordgo.InteractionResponse{
+		// 			Type: discordgo.InteractionResponseChannelMessageWithSource,
+		// 			Data: &discordgo.InteractionResponseData{
+		// 				Content:    "Hunt Helper guild configuration",
+		// 				Components: initial_components,
+		// 				Flags:      discordgo.MessageFlagsEphemeral,
+		// 			},
+		// 		}
+		// 		s.InteractionRespond(i.Interaction, respond)
+		// 	}
+		// },
 	}
 )

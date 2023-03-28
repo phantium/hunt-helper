@@ -5,7 +5,6 @@ import (
 	"discordbot/internal/common"
 	"discordbot/internal/orm"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -132,6 +131,24 @@ func FindAGameStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
+var game_types = map[string]string{
+	"🐉": "Dragon's Dungeon",
+	"🐙": "Kraken's Ship",
+	"⛄": "Yeti's Tundra",
+	"🏰": "Maze",
+	"😈": "Abyssal Maze",
+	"💬": "Event",
+}
+
+var game_name = map[string]string{
+	"🐉": "dragon",
+	"🐙": "kraken",
+	"⛄": "yeti",
+	"🏰": "maze",
+	"😈": "abyssal",
+	"💬": "event",
+}
+
 func ReactToFindAGame(s *discordgo.Session, member_id string, member_id_poster string, guild *orm.Guilds, game_type string) {
 	guild_config := orm.GetGuildConfig(guild.GuildID)
 	player_id, _ := orm.GetMemberWithPlayerID(member_id)
@@ -144,7 +161,7 @@ func ReactToFindAGame(s *discordgo.Session, member_id string, member_id_poster s
 		return
 	}
 	priv_chan, _ := s.UserChannelCreate(member_id_poster)
-	s.ChannelMessageSend(priv_chan.ID, fmt.Sprintf("Message from server %s:\n<@%s> wants to play Hunt Royale %s with you! Their :id: %s", guild.GuildName, member_id, strings.ToTitle(game_type), player_id.PlayerID))
+	s.ChannelMessageSend(priv_chan.ID, fmt.Sprintf("Message from server %s:\n<@%s> wants to play a Hunt Royale **%s** with you! :id: %s", guild.GuildName, member_id, game_type, player_id.PlayerID))
 	// go func() {
 	// 	time.Sleep(game_request_timeout * time.Minute)
 	// 	s.ChannelMessageEdit(priv_chan.ID, react_msg.ID, fmt.Sprintf("Message from server %s:\nHunt Royale Dungeon Finder message has expired.", guild.GuildName))
@@ -160,7 +177,7 @@ func FindAGameEmojiResponse(s *discordgo.Session, r *discordgo.MessageReactionAd
 	}
 
 	// check if we care about this emoji at all
-	allowedemojis := []string{"dragon", "kraken", "yeti", "maze", "abyssal"}
+	allowedemojis := []string{"🐉", "🐙", "⛄", "🏰", "😈", "💬"}
 	if !slices.Contains(allowedemojis, r.Emoji.Name) {
 		return
 	}
@@ -196,8 +213,8 @@ func FindAGameEmojiResponse(s *discordgo.Session, r *discordgo.MessageReactionAd
 		}()
 		return
 	}
-	ReactToFindAGame(s, r.UserID, fag.UserID, guild_info, r.Emoji.Name)
-	orm.AddFindAGameReaction(r.MessageID, r.GuildID, fag.UserID, r.Emoji.Name)
+	ReactToFindAGame(s, r.UserID, fag.UserID, guild_info, game_types[r.Emoji.Name])
+	orm.AddFindAGameReaction(r.MessageID, r.GuildID, fag.UserID, game_name[r.Emoji.Name])
 }
 
 // func OnMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -218,17 +235,4 @@ func FindAGameEmojiResponse(s *discordgo.Session, r *discordgo.MessageReactionAd
 // 	}
 
 // 	// fmt.Println(m.Message)
-// }
-
-// func OnMessageReactionAdd(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
-// 	// Ignore reactions by the bot itself.
-// 	if r.UserID == s.State.User.ID {
-// 		return
-// 	}
-
-// 	// Check if the reaction is the "thumbs up" emoji.
-// 	if strings.HasPrefix(r.Emoji.Name, "👍") {
-// 		// Respond with a message.
-// 		s.ChannelMessageSend(r.ChannelID, "I'm glad you liked that!")
-// 	}
 // }
