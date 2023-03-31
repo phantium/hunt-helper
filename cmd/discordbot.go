@@ -5,26 +5,22 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
-	log "github.com/sirupsen/logrus"
-
+	"discordbot/commands"
+	"discordbot/events"
 	"discordbot/handlers"
 	"discordbot/internal/configuration"
 	"discordbot/internal/orm"
-	"discordbot/internal/slashcommands"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/spf13/cobra"
-	"github.com/zekrotja/ken"
-	"github.com/zekrotja/ken/store"
 )
 
 var cfg configuration.DiscordConfig
 
 const discord_config string = "discord.yml"
 
-var reaction_request_time time.Duration = 10
+// var reaction_request_time time.Duration = 10
 
 func init() {
 	rootCmd.AddCommand(DiscordBot)
@@ -58,46 +54,35 @@ func RunDiscordBot() {
 	session.AddHandler(handlers.GuildCreate)
 	session.AddHandler(handlers.GuildDelete)
 
-	// // register find a game handlers
+	// register find a game handlers
 	session.AddHandler(handlers.OnPlayerMessageID)
 	session.AddHandler(handlers.FindAGameStats)
 	session.AddHandler(handlers.ConfigurePlayerChannelID)
 	session.AddHandler(handlers.ConfigureBrowseChannelID)
 
-	session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
-	})
+	session.AddHandler(events.InteractionGlobalCreate)
+	session.AddHandler(events.InteractionGuildCreate)
+	session.AddHandler(events.Ready)
 
 	defer session.Close()
-
-	k, err := ken.New(session, ken.Options{
-		CommandStore: store.NewDefault(),
-	})
-	must(err)
-
-	must(k.RegisterCommands(
-		// new(slashcommands.BoardPost),
-		new(slashcommands.CommandPlayerID),
-		new(slashcommands.CommandPlayerIDReverse),
-	))
-
-	defer k.Unregister()
 
 	// Open a websocket connection to Discord and begin listening.
 	must(session.Open())
 
-	session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-		switch i.Type {
-		case discordgo.InteractionApplicationCommand:
-			if h, ok := handlers.CommandsHandlers[i.ApplicationCommandData().Name]; ok {
-				h(s, i)
-			}
-		case discordgo.InteractionMessageComponent:
-			if h, ok := handlers.ComponentsHandlers[i.MessageComponentData().CustomID]; ok {
-				h(s, i)
-			}
-		}
-	})
+	commands.LoadGlobalCommands(session)
+
+	// session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	// 	switch i.Type {
+	// 	case discordgo.InteractionApplicationCommand:
+	// 		if h, ok := handlers.CommandsHandlers[i.ApplicationCommandData().Name]; ok {
+	// 			h(s, i)
+	// 		}
+	// 	case discordgo.InteractionMessageComponent:
+	// 		if h, ok := handlers.ComponentsHandlers[i.MessageComponentData().CustomID]; ok {
+	// 			h(s, i)
+	// 		}
+	// 	}
+	// })
 
 	// capture reactions to messages
 	session.AddHandler(func(s *discordgo.Session, r *discordgo.MessageReactionAdd) {

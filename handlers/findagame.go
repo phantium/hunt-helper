@@ -119,11 +119,14 @@ func FindAGameStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 						Name:  "Last updated:",
 						Value: string(FindAGameStats_Time()),
 					}
-					board_message, _ = s.ChannelMessageEditEmbeds(
+					board_message, err = s.ChannelMessageEditEmbeds(
 						m.ChannelID,
 						board_message.ID,
 						embed_message,
 					)
+					if err != nil {
+						break
+					}
 				}
 				board_md5 = md5.Sum([]byte(FindAGameStats_Message()))
 			}
@@ -153,10 +156,17 @@ func ReactToFindAGame(s *discordgo.Session, member_id string, member_id_poster s
 	guild_config := orm.GetGuildConfig(guild.GuildID)
 	player_id, _ := orm.GetMemberWithPlayerID(member_id)
 	if player_id.PlayerID == "" {
-		noid_msg, _ := s.ChannelMessageSend(guild_config.ChannelBrowse, fmt.Sprintf("<@%s> Sorry, but you need to set your Player ID first! <#%s>", member_id, guild_config.ChannelPlayerID))
+		noid_msg, err := s.ChannelMessageSend(guild_config.ChannelBrowse, fmt.Sprintf("<@%s> Sorry, but you need to set your Player ID first! <#%s>", member_id, guild_config.ChannelPlayerID))
+		if err != nil {
+			return
+		}
+		timer := time.NewTimer(60 * time.Second)
 		go func() {
-			time.Sleep(60 * time.Second)
-			s.ChannelMessageDelete(guild_config.ChannelBrowse, noid_msg.ID)
+			<-timer.C
+			err := s.ChannelMessageDelete(guild_config.ChannelBrowse, noid_msg.ID)
+			if err != nil {
+				return
+			}
 		}()
 		return
 	}
@@ -184,16 +194,23 @@ func FindAGameEmojiResponse(s *discordgo.Session, r *discordgo.MessageReactionAd
 
 	// check if user already responded to the message
 	reaction := orm.GetFindAGameReaction(r.MessageID, r.UserID, r.GuildID)
-	if reaction.CreatedAt.IsZero() == false && !time.Now().After(reaction.CreatedAt.Add(30*time.Minute)) {
+	if !reaction.CreatedAt.IsZero() && !time.Now().After(reaction.CreatedAt.Add(30*time.Minute)) {
 		msgref := &discordgo.MessageReference{
 			ChannelID: r.ChannelID,
 			MessageID: r.MessageID,
 			GuildID:   r.GuildID,
 		}
-		react_msg, _ := s.ChannelMessageSendReply(r.ChannelID, fmt.Sprintf("<@%s> you have already reacted to this game request!", r.UserID), msgref)
+		react_msg, err := s.ChannelMessageSendReply(r.ChannelID, fmt.Sprintf("<@%s> you have already reacted to this game request!", r.UserID), msgref)
+		if err != nil {
+			return
+		}
+		timer := time.NewTimer(30 * time.Second)
 		go func() {
-			time.Sleep(30 * time.Second)
-			s.ChannelMessageDelete(r.ChannelID, react_msg.ID)
+			<-timer.C
+			err := s.ChannelMessageDelete(r.ChannelID, react_msg.ID)
+			if err != nil {
+				return
+			}
 		}()
 		return
 	}
@@ -206,10 +223,17 @@ func FindAGameEmojiResponse(s *discordgo.Session, r *discordgo.MessageReactionAd
 			MessageID: r.MessageID,
 			GuildID:   r.GuildID,
 		}
-		react_msg, _ := s.ChannelMessageSendReply(r.ChannelID, fmt.Sprintf("<@%s> you cannot respond to your own request!", r.UserID), msgref)
+		react_msg, err := s.ChannelMessageSendReply(r.ChannelID, fmt.Sprintf("<@%s> you cannot respond to your own request!", r.UserID), msgref)
+		if err != nil {
+			return
+		}
+		timer := time.NewTimer(30 * time.Second)
 		go func() {
-			time.Sleep(30 * time.Second)
-			s.ChannelMessageDelete(r.ChannelID, react_msg.ID)
+			<-timer.C
+			err := s.ChannelMessageDelete(r.ChannelID, react_msg.ID)
+			if err != nil {
+				return
+			}
 		}()
 		return
 	}

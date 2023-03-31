@@ -12,8 +12,6 @@ import (
 	"discordbot/internal/orm"
 )
 
-var channel_playerid string = "1082676228491853824"
-
 var playerid_filter = regexp.MustCompile(`[A-Z]{8}`)
 
 func ConfigurePlayerChannelID(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -45,28 +43,49 @@ func OnPlayerMessageID(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if len(m.Content) == 8 && playerid_filter.MatchString(new_player_id) {
 		player_id, _ := orm.GetMemberWithPlayerID(m.Author.ID)
 		if player_id.PlayerID != "" && player_id.PlayerID == new_player_id {
-			stored_msg, _ := s.ChannelMessageSend(m.ChannelID, "Thank you "+m.Author.Mention()+", but I already have that player ID: **"+new_player_id+"** stored for you.")
+			stored_msg, err := s.ChannelMessageSend(m.ChannelID, "Thank you "+m.Author.Mention()+", but I already have that player ID: **"+new_player_id+"** stored for you.")
+			if err != nil {
+				return
+			}
+			timer := time.NewTimer(30 * time.Second)
 			go func() {
-				time.Sleep(30 * time.Second)
-				s.ChannelMessageDelete(m.ChannelID, stored_msg.ID)
+				<-timer.C
+				err := s.ChannelMessageDelete(m.ChannelID, stored_msg.ID)
+				if err != nil {
+					return
+				}
 			}()
 		} else if player_id.PlayerID != "" {
 			orm.DelMembersExistingPlayerID(m.Author.ID)
 			orm.AddMemberWithPlayerID(m.Author.ID, new_player_id)
-			stored_msg, _ := s.ChannelMessageSend(m.ChannelID, "Thank you "+m.Author.Mention()+", your player ID has been updated to: **"+new_player_id+"**, previous ID: *"+player_id.PlayerID+"*")
+			stored_msg, err := s.ChannelMessageSend(m.ChannelID, "Thank you "+m.Author.Mention()+", your player ID has been updated to: **"+new_player_id+"**, previous ID: *"+player_id.PlayerID+"*")
+			if err != nil {
+				return
+			}
+			timer := time.NewTimer(30 * time.Second)
 			go func() {
-				time.Sleep(30 * time.Second)
-				s.ChannelMessageDelete(m.ChannelID, stored_msg.ID)
+				<-timer.C
+				err := s.ChannelMessageDelete(m.ChannelID, stored_msg.ID)
+				if err != nil {
+					return
+				}
 			}()
 		} else {
 			orm.AddMemberWithPlayerID(m.Author.ID, new_player_id)
-			stored_msg, _ := s.ChannelMessageSend(m.ChannelID, "Thank you "+m.Author.Mention()+", your player ID: **"+new_player_id+"** has been stored.")
+			stored_msg, err := s.ChannelMessageSend(m.ChannelID, "Thank you "+m.Author.Mention()+", your player ID: **"+new_player_id+"** has been stored.")
+			if err != nil {
+				return
+			}
+			timer := time.NewTimer(30 * time.Second)
 			go func() {
-				time.Sleep(30 * time.Second)
+				<-timer.C
 				s.ChannelMessageDelete(m.ChannelID, stored_msg.ID)
 			}()
 		}
 		// finally delete the original message from the user
-		s.ChannelMessageDelete(m.ChannelID, m.ID)
+		err := s.ChannelMessageDelete(m.ChannelID, m.ID)
+		if err != nil {
+			return
+		}
 	}
 }
