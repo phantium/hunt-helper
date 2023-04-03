@@ -24,33 +24,67 @@ var CommandPlayerIDReverse = discordgo.ApplicationCommand{
 	},
 }
 
-func CommandPlayerIDReverseHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	var memberid_message string
-	var playerid string
+// func CommandPlayerIDReverseHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
+// 	var memberid_message string
+// 	var playerid string
 
+// 	options := i.ApplicationCommandData().Options
+
+// 	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+// 	for _, opt := range options {
+// 		optionMap[opt.Name] = opt
+// 	}
+
+// 	if opt, ok := optionMap["playerid"]; ok {
+// 		playerid = opt.StringValue()
+// 	}
+
+// 	member_id := orm.GetMemberID(playerid)
+// 	if member_id != "" {
+// 		memberid_message = fmt.Sprintf("Hunt Royale :id: %s belongs to <@%s>", playerid, member_id)
+// 	} else {
+// 		memberid_message = fmt.Sprintf("Hunt Royale :id: %s is not registered to anyone", playerid)
+// 	}
+
+// 	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+// 		Type: discordgo.InteractionResponseChannelMessageWithSource,
+// 		Data: &discordgo.InteractionResponseData{
+// 			Content: memberid_message,
+// 			Flags:   discordgo.MessageFlagsEphemeral,
+// 		},
+// 	})
+// }
+
+func CommandPlayerIDReverseHandler(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	options := i.ApplicationCommandData().Options
 
-	optionMap := make(map[string]*discordgo.ApplicationCommandInteractionDataOption, len(options))
+	var playerID string
 	for _, opt := range options {
-		optionMap[opt.Name] = opt
+		if opt.Name == "playerid" {
+			playerID = opt.StringValue()
+			break
+		}
 	}
 
-	if opt, ok := optionMap["playerid"]; ok {
-		playerid = opt.StringValue()
-	}
+	memberID := orm.GetMemberID(playerID)
 
-	member_id := orm.GetMemberID(playerid)
-	if member_id != "" {
-		memberid_message = fmt.Sprintf("Hunt Royale :id: %s belongs to <@%s>", playerid, member_id)
+	var message string
+	if memberID != "" {
+		message = fmt.Sprintf("Hunt Royale :id: %s belongs to <@%s>", playerID, memberID)
 	} else {
-		memberid_message = fmt.Sprintf("Hunt Royale :id: %s is not registered to anyone", playerid)
+		message = fmt.Sprintf("Hunt Royale :id: %s is not registered to anyone", playerID)
 	}
 
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	response := &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: memberid_message,
+			Content: message,
 			Flags:   discordgo.MessageFlagsEphemeral,
 		},
-	})
+	}
+
+	err := s.InteractionRespond(i.Interaction, response)
+	if err != nil {
+		return
+	}
 }

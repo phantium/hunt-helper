@@ -58,16 +58,16 @@ func FindAGameStats_EmbedMessage() []*discordgo.MessageEmbed {
 	members_count := orm.GetMembersCount()
 	message_embed := []*discordgo.MessageEmbed{
 		{
-			Title: "Requests Board",
+			Title: ":scroll: Requests Board",
 			Description: "Current open requests count for dungeon runs and carries:" +
-				"\n\n**Dragon:** " + fmt.Sprintf("Runs: %d, Carries: %d", dragon_runs, dragon_carries) +
-				"\n**Kraken:** " + fmt.Sprintf("Runs: %d, Carries: %d", kraken_runs, kraken_carries) +
-				"\n**Yeti:** " + fmt.Sprintf("Runs: %d, Carries: %d", yeti_runs, yeti_carries) +
-				"\n**Maze:** " + fmt.Sprintf("Runs: %d, Carries: %d", maze_runs, maze_carries) +
-				"\n**Abyssal:** " + fmt.Sprintf("Runs: %d, Carries: %d", abyssal_runs, abyssal_carries),
+				"\n\n:dragon: **Dragon:** " + fmt.Sprintf("Runs: %d, Carries: %d", dragon_runs, dragon_carries) +
+				"\n:octopus: **Kraken:** " + fmt.Sprintf("Runs: %d, Carries: %d", kraken_runs, kraken_carries) +
+				"\n:snowman: **Yeti:** " + fmt.Sprintf("Runs: %d, Carries: %d", yeti_runs, yeti_carries) +
+				"\n:european_castle: **Maze:** " + fmt.Sprintf("Runs: %d, Carries: %d", maze_runs, maze_carries) +
+				"\n:smiling_imp: **Abyssal:** " + fmt.Sprintf("Runs: %d, Carries: %d", abyssal_runs, abyssal_carries),
 			Fields: []*discordgo.MessageEmbedField{
 				{
-					Name:  "Players registered",
+					Name:  ":video_game: Players registered",
 					Value: members_count,
 				},
 				{},
@@ -89,7 +89,7 @@ func FindAGameStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 		embed_message := FindAGameStats_EmbedMessage()
 		embed_message[0].Fields[1] = &discordgo.MessageEmbedField{
-			Name:  "Last updated:",
+			Name:  ":clock1: Last updated:",
 			Value: string(FindAGameStats_Time()),
 		}
 
@@ -116,7 +116,7 @@ func FindAGameStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 				if board_md5 != md5.Sum([]byte(FindAGameStats_Message())) {
 					embed_message := FindAGameStats_EmbedMessage()
 					embed_message[0].Fields[1] = &discordgo.MessageEmbedField{
-						Name:  "Last updated:",
+						Name:  ":clock1: Last updated:",
 						Value: string(FindAGameStats_Time()),
 					}
 					board_message, err = s.ChannelMessageEditEmbeds(
