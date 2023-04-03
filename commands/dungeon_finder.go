@@ -1,11 +1,13 @@
 package commands
 
 import (
+	"bytes"
 	"discordbot/internal/common"
 	"discordbot/internal/orm"
 	"fmt"
 	"log"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -35,6 +37,69 @@ var CommandDungeonFinder = discordgo.ApplicationCommand{
 	Description: "Hunt Royale Dungeon Finder",
 }
 
+func deleteGameEntryAndMessage(s *discordgo.Session, i *discordgo.InteractionCreate, dg_msg *discordgo.Message) {
+	orm.DeleteFindAGame(i.Member.User.ID, i.GuildID)
+	err := s.ChannelMessageDelete(dg_msg.ChannelID, dg_msg.ID)
+	if err != nil {
+		return
+	}
+}
+
+func deleteGameRequestAfterTimeout(s *discordgo.Session, i *discordgo.InteractionCreate, dg_msg *discordgo.Message, request_timeout time.Duration) {
+	time.AfterFunc(request_timeout, func() {
+		deleteGameEntryAndMessage(s, i, dg_msg)
+	})
+}
+
+func interactionResponseWithMessage(s *discordgo.Session, i *discordgo.InteractionCreate, message string) {
+	response := &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: message,
+			Flags:   discordgo.MessageFlagsEphemeral,
+		},
+	}
+
+	err := s.InteractionRespond(i.Interaction, response)
+	if err != nil {
+		return
+	}
+}
+
+func sendDungeonMessage(s *discordgo.Session, member *discordgo.Member, roles []*discordgo.Role, channelBrowse string, dungeonMessageTemplate string) (*discordgo.Message, error) {
+	// Fill in the struct with the necessary variables
+	messageData := struct {
+		Member   string
+		Roles    []*discordgo.Role
+		PlayerID string
+	}{
+		Member:   member.Mention(),
+		Roles:    roles,
+		PlayerID: orm.GetPlayerID(member.User.ID),
+	}
+
+	// Create a new template and parse the message template
+	tmpl, err := template.New("dungeonMessage").Parse(dungeonMessageTemplate)
+	if err != nil {
+		return nil, err
+	}
+
+	// Execute the template with the message data
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, messageData)
+	if err != nil {
+		return nil, err
+	}
+
+	// Send the message to the channel
+	msg, err := s.ChannelMessageSend(channelBrowse, buf.String())
+	if err != nil {
+		return nil, err
+	}
+
+	return msg, nil
+}
+
 // dungeon run "dungeon_finder_run"
 func InteractionDungeonFinderRun(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	guild := orm.GetGuildConfig(i.GuildID)
@@ -47,56 +112,30 @@ func InteractionDungeonFinderRun(s *discordgo.Session, i *discordgo.InteractionC
 	fagtime := orm.GetFindAGame(i.Member.User.ID, i.GuildID)
 
 	if orm.GetPlayerID(i.Member.User.ID) == "" {
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "Sorry, but you need to set your Player ID first: <#" + guild.ChannelPlayerID + ">",
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		})
+		interactionResponseWithMessage(s, i, "Sorry, but you need to set your Player ID first: <#"+guild.ChannelPlayerID+">")
 	} else if !fagtime.CreatedAt.IsZero() && !time.Now().After(fagtime.CreatedAt.Add(request_time)) {
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", request_time.Minutes(), time.Since(fagtime.CreatedAt.Add(request_time)).Minutes()),
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		})
+		interactionResponseWithMessage(s, i, fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", request_time.Minutes(), time.Since(fagtime.CreatedAt.Add(request_time)).Minutes()))
 	} else if guild.ChannelBrowse == "" {
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "Sorry, but the server admin needs to set the browse channel by using: !set channel browse",
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		})
+		interactionResponseWithMessage(s, i, "Sorry, but the server admin needs to set the browse channel by using: !set channel browse")
 	} else {
-		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "Thank you, your request has been posted!",
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		})
-		if err != nil {
-			panic(err)
-		}
+		interactionResponseWithMessage(s, i, "Thank you, your request has been posted!")
 
 		g, err := s.State.Guild(i.GuildID)
 		if err != nil {
 			return
 		}
-		final_role_ids := []string{}
+		final_role_ids := []*discordgo.Role{}
 		final_named_roles := []string{}
 		for _, r := range data.Values {
 			for _, rg := range g.Roles {
 				if strings.EqualFold(r, emoji.RemoveAll(rg.Name)) {
 					final_named_roles = append(final_named_roles, strings.ToLower(emoji.RemoveAll(rg.Name)))
-					final_role_ids = append(final_role_ids, "<@&"+rg.ID+">")
+					// final_role_ids = append(final_role_ids, "<@&"+rg.ID+">")
+					final_role_ids = append(final_role_ids, rg)
 				}
 			}
 		}
-		dg_msg, err := s.ChannelMessageSend(guild.ChannelBrowse, i.Member.Mention()+" wants a dungeon run for: "+strings.Join(final_role_ids, ", ")+" :id: "+orm.GetPlayerID(i.Member.User.ID))
+		dg_msg, err := sendDungeonMessage(s, i.Member, final_role_ids, guild.ChannelBrowse, "**Run Request** - {{.Member}}: {{range $role := .Roles}}<@&{{$role.ID}}>{{end}} :id: {{.PlayerID}}")
 		if err != nil {
 			return
 		}
@@ -107,15 +146,7 @@ func InteractionDungeonFinderRun(s *discordgo.Session, i *discordgo.InteractionC
 				log.Println(err)
 			}
 		}
-		timer := time.NewTimer(request_timeout)
-		go func() {
-			<-timer.C
-			orm.DeleteFindAGame(i.Member.User.ID, i.GuildID)
-			err := s.ChannelMessageDelete(dg_msg.ChannelID, dg_msg.ID)
-			if err != nil {
-				return
-			}
-		}()
+		deleteGameRequestAfterTimeout(s, i, dg_msg, request_timeout)
 	}
 }
 
@@ -131,53 +162,26 @@ func InteractionDungeonFinderCarry(s *discordgo.Session, i *discordgo.Interactio
 	fagtime := orm.GetFindAGame(i.Member.User.ID, i.GuildID)
 
 	if orm.GetPlayerID(i.Member.User.ID) == "" {
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "Sorry, but you need to set your Player ID first: <#" + guild.ChannelPlayerID + ">",
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		})
+		interactionResponseWithMessage(s, i, "Sorry, but you need to set your Player ID first: <#"+guild.ChannelPlayerID+">")
 	} else if !fagtime.CreatedAt.IsZero() && !time.Now().After(fagtime.CreatedAt.Add(request_time)) {
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", request_time.Minutes(), time.Since(fagtime.CreatedAt.Add(request_time)).Minutes()),
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		})
+		interactionResponseWithMessage(s, i, fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", request_time.Minutes(), time.Since(fagtime.CreatedAt.Add(request_time)).Minutes()))
 	} else if guild.ChannelBrowse == "" {
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "Sorry, but the server admin needs to set the browse channel by using: !set channel browse",
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		})
+		interactionResponseWithMessage(s, i, "Sorry, but the server admin needs to set the browse channel by using: !set channel browse")
 	} else {
-		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "Thank you, your request has been posted!",
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		})
-		if err != nil {
-			panic(err)
-		}
+		interactionResponseWithMessage(s, i, "Thank you, your request has been posted!")
 
 		g, _ := s.State.Guild(i.GuildID)
-		final_role_ids := []string{}
+		final_role_ids := []*discordgo.Role{}
 		final_named_roles := []string{}
 		for _, r := range data.Values {
 			for _, rg := range g.Roles {
 				if strings.EqualFold(r, emoji.RemoveAll(rg.Name)) {
 					final_named_roles = append(final_named_roles, strings.ToLower(emoji.RemoveAll(rg.Name)))
-					final_role_ids = append(final_role_ids, "<@&"+rg.ID+">")
+					final_role_ids = append(final_role_ids, rg)
 				}
 			}
 		}
-		dg_msg, err := s.ChannelMessageSend(guild.ChannelBrowse, i.Member.Mention()+" wants a dungeon carry for: "+strings.Join(final_role_ids, ", ")+" :id: "+orm.GetPlayerID(i.Member.User.ID))
+		dg_msg, err := sendDungeonMessage(s, i.Member, final_role_ids, guild.ChannelBrowse, "**Carry Request** - {{.Member}}: {{range $role := .Roles}}<@&{{$role.ID}}>{{end}} :id: {{.PlayerID}}")
 		if err != nil {
 			return
 		}
@@ -189,15 +193,7 @@ func InteractionDungeonFinderCarry(s *discordgo.Session, i *discordgo.Interactio
 				log.Println(err)
 			}
 		}
-		timer := time.NewTimer(request_timeout)
-		go func() {
-			<-timer.C
-			orm.DeleteFindAGame(i.Member.User.ID, i.GuildID)
-			err := s.ChannelMessageDelete(dg_msg.ChannelID, dg_msg.ID)
-			if err != nil {
-				return
-			}
-		}()
+		deleteGameRequestAfterTimeout(s, i, dg_msg, request_timeout)
 	}
 }
 
@@ -205,14 +201,7 @@ func InteractionDungeonFinderCarry(s *discordgo.Session, i *discordgo.Interactio
 func InteractionDungeonFinder(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if !common.MemberHasPermission(s, i.GuildID, i.Member.User.ID, discordgo.PermissionAdministrator) {
 
-		respond := &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "Sorry, you are not allowed to use this command",
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		}
-		s.InteractionRespond(i.Interaction, respond)
+		interactionResponseWithMessage(s, i, "Sorry, you are not allowed to use this command")
 
 	} else {
 		initial_components := []discordgo.MessageComponent{
@@ -255,13 +244,7 @@ func InteractionSelectDungeon(s *discordgo.Session, i *discordgo.InteractionCrea
 	fagtime := orm.GetFindAGame(i.Member.User.ID, i.GuildID)
 
 	if !fagtime.CreatedAt.IsZero() && !time.Now().After(fagtime.CreatedAt.Add(request_time)) {
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", request_time.Minutes(), time.Since(fagtime.CreatedAt.Add(request_time)).Minutes()),
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		})
+		interactionResponseWithMessage(s, i, fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", request_time.Minutes(), time.Since(fagtime.CreatedAt.Add(request_time)).Minutes()))
 	} else {
 		minValues := 1
 		dungeon_components := []discordgo.MessageComponent{
@@ -391,37 +374,15 @@ func InteractionSelectCoop(s *discordgo.Session, i *discordgo.InteractionCreate)
 	request_timeout := time.Duration(guild_config.FAGRequestTimeout) * time.Minute
 
 	if !fagtime.CreatedAt.IsZero() && !time.Now().After(fagtime.CreatedAt.Add(request_time)) {
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", request_time.Minutes(), time.Since(fagtime.CreatedAt.Add(request_time)).Minutes()),
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		})
+		interactionResponseWithMessage(s, i, fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", request_time.Minutes(), time.Since(fagtime.CreatedAt.Add(request_time)).Minutes()))
 	} else {
-		respond := &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "Thank you, your co-op request has been posted!",
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		}
-
-		s.InteractionRespond(i.Interaction, respond)
-		dg_msg, err := s.ChannelMessageSend(guild.ChannelBrowse, i.Member.Mention()+" wants a co-op run :id: "+orm.GetPlayerID(i.Member.User.ID))
+		interactionResponseWithMessage(s, i, "Thank you, your co-op request has been posted!")
+		dg_msg, err := sendDungeonMessage(s, i.Member, []*discordgo.Role{}, guild.ChannelBrowse, "**Co-Op Request** - {{.Member}} :id: {{.PlayerID}}")
 		if err != nil {
 			return
 		}
 		orm.AddFindAGame(dg_msg.ID, i.ChannelID, i.GuildID, i.Member.User.ID, []string{"coop"}, "run")
-		timer := time.NewTimer(request_timeout)
-		go func() {
-			<-timer.C
-			orm.DeleteFindAGame(i.Member.User.ID, i.GuildID)
-			err := s.ChannelMessageDelete(dg_msg.ChannelID, dg_msg.ID)
-			if err != nil {
-				return
-			}
-		}()
+		deleteGameRequestAfterTimeout(s, i, dg_msg, request_timeout)
 	}
 }
 
@@ -435,36 +396,14 @@ func InteractionSelectEvent(s *discordgo.Session, i *discordgo.InteractionCreate
 	request_timeout := time.Duration(guild_config.FAGRequestTimeout) * time.Minute
 
 	if !fagtime.CreatedAt.IsZero() && !time.Now().After(fagtime.CreatedAt.Add(request_time)) {
-		s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", request_time.Minutes(), time.Since(fagtime.CreatedAt.Add(request_time)).Minutes()),
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		})
+		interactionResponseWithMessage(s, i, fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", request_time.Minutes(), time.Since(fagtime.CreatedAt.Add(request_time)).Minutes()))
 	} else {
-		respond := &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "Thank you, your event request has been posted!",
-				Flags:   discordgo.MessageFlagsEphemeral,
-			},
-		}
-
-		s.InteractionRespond(i.Interaction, respond)
-		dg_msg, err := s.ChannelMessageSend(guild.ChannelBrowse, i.Member.Mention()+" wants a team mate for this weeks Discord event :id: "+orm.GetPlayerID(i.Member.User.ID))
+		interactionResponseWithMessage(s, i, "Thank you, your event request has been posted!")
+		dg_msg, err := sendDungeonMessage(s, i.Member, []*discordgo.Role{}, guild.ChannelBrowse, "**Weekly Event Request** - {{.Member}} :id: {{.PlayerID}}")
 		if err != nil {
 			return
 		}
 		orm.AddFindAGame(dg_msg.ID, i.ChannelID, i.GuildID, i.Member.User.ID, []string{"event"}, "run")
-		timer := time.NewTimer(request_timeout)
-		go func() {
-			<-timer.C
-			orm.DeleteFindAGame(i.Member.User.ID, i.GuildID)
-			err := s.ChannelMessageDelete(dg_msg.ChannelID, dg_msg.ID)
-			if err != nil {
-				return
-			}
-		}()
+		deleteGameRequestAfterTimeout(s, i, dg_msg, request_timeout)
 	}
 }
