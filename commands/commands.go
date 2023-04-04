@@ -20,10 +20,14 @@ var (
 	// guild
 	commands = []*discordgo.ApplicationCommand{
 		&CommandDungeonFinder,
+		&CommandDungeonFinderRoles,
+		&CommandHHChannels,
 	}
 
 	CommandHandlers = map[string]func(*discordgo.Session, *discordgo.InteractionCreate){
 		"dungeon_finder": InteractionDungeonFinder,
+		"df_roles":       CommandDungeonFinderRolesHandler,
+		"hh_channels":    CommandHHChannelsHandler,
 	}
 
 	ComponentHandlers = map[string]func(*discordgo.Session, *discordgo.InteractionCreate){

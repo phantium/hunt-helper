@@ -42,6 +42,13 @@ type GuildConfig struct {
 	ChannelBoardPost  string
 	FAGRequestTime    int `gorm:"default:60"`
 	FAGRequestTimeout int `gorm:"default:60"`
+	RoleDragon        string
+	RoleKraken        string
+	RoleYeti          string
+	RoleMaze          string
+	RoleAbyssal       string
+	RoleCoop          string
+	RoleEvent         string
 }
 
 type Guilds struct {
@@ -257,9 +264,9 @@ func DeleteFindAGame(user_id string, guild_id string) {
 	_db.Unscoped().Where("user_id = ?", user_id).Where("guild_id = ?", guild_id).Delete(&FindAGameMessage{})
 }
 
-func GetFindAGame(user_id string, guild_id string) *FindAGameMessage {
+func GetFindAGame(user_id string) *FindAGameMessage {
 	var findagame *FindAGameMessage
-	if err := _db.Where("user_id = ?", user_id).Where("guild_id = ?", guild_id).Last(&findagame).Error; err != nil {
+	if err := _db.Where("user_id = ?", user_id).Last(&findagame).Error; err != nil {
 		log.Println(err)
 		return findagame
 	}

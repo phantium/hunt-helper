@@ -141,6 +141,7 @@ var game_types = map[string]string{
 	"🏰": "Maze",
 	"😈": "Abyssal Maze",
 	"💬": "Event",
+	"👥": "Co-Op",
 }
 
 var game_name = map[string]string{
@@ -150,6 +151,7 @@ var game_name = map[string]string{
 	"🏰": "maze",
 	"😈": "abyssal",
 	"💬": "event",
+	"👥": "coop",
 }
 
 func deleteMessage(s *discordgo.Session, msg *discordgo.Message) {
@@ -202,7 +204,7 @@ func FindAGameEmojiResponse(s *discordgo.Session, r *discordgo.MessageReactionAd
 	}
 
 	// check if we care about this emoji at all
-	allowedemojis := []string{"🐉", "🐙", "⛄", "🏰", "😈", "💬"}
+	allowedemojis := []string{"🐉", "🐙", "⛄", "🏰", "😈", "💬", "👥"}
 	if !slices.Contains(allowedemojis, r.Emoji.Name) {
 		return
 	}

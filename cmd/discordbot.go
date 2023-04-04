@@ -59,6 +59,7 @@ func RunDiscordBot() {
 	session.AddHandler(handlers.FindAGameStats)
 	session.AddHandler(handlers.ConfigurePlayerChannelID)
 	session.AddHandler(handlers.ConfigureBrowseChannelID)
+	// session.AddHandler(handlers.ConfigureRole)
 
 	session.AddHandler(events.InteractionGlobalCreate)
 	session.AddHandler(events.InteractionGuildCreate)
