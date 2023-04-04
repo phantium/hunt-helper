@@ -168,7 +168,6 @@ func deleteMessageAfterTimeout(s *discordgo.Session, msg *discordgo.Message, req
 func ReactToFindAGame(s *discordgo.Session, member_id string, member_id_poster string, guild *orm.Guilds, game_type string) {
 	guild_config := orm.GetGuildConfig(guild.GuildID)
 	player_id, _ := orm.GetMemberWithPlayerID(member_id)
-	log.Error("ReactToFindAGame ", member_id, member_id_poster, guild, game_type)
 	if player_id.PlayerID == "" {
 		if guild_config.ChannelPlayerID == "" {
 			noid_msg, err := s.ChannelMessageSend(guild_config.ChannelBrowse, fmt.Sprintf("<@%s> Sorry, but you need to set your Player ID first! However, the server admin has not yet configured the channel!", member_id))
@@ -186,7 +185,6 @@ func ReactToFindAGame(s *discordgo.Session, member_id string, member_id_poster s
 		return
 	}
 	priv_chan, _ := s.UserChannelCreate(member_id_poster)
-	log.Error("ReactToFindAGame2 ", guild.GuildName, member_id_poster, member_id, game_type, player_id.PlayerID)
 	msg, err := s.ChannelMessageSend(priv_chan.ID, fmt.Sprintf("Message from server %s:\n<@%s> wants to play a Hunt Royale **%s** with you! :id: %s", guild.GuildName, member_id, game_type, player_id.PlayerID))
 	if err != nil {
 		return
@@ -247,9 +245,8 @@ func FindAGameEmojiResponse(s *discordgo.Session, r *discordgo.MessageReactionAd
 		deleteMessageAfterTimeout(s, react_msg, 30*time.Second)
 		return
 	}
-	log.Error(fmt.Sprintf("FindAGameEmojiResponse r.UserID: %s fag %v guildinfo %v emojiname %s", r.UserID, fag, guild_info, game_types[r.Emoji.Name]))
 	ReactToFindAGame(s, r.UserID, fag.UserID, guild_info, game_types[r.Emoji.Name])
-	orm.AddFindAGameReaction(r.MessageID, r.GuildID, fag.UserID, game_name[r.Emoji.Name])
+	orm.AddFindAGameReaction(r.MessageID, r.GuildID, r.UserID, game_name[r.Emoji.Name])
 }
 
 // func OnMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
