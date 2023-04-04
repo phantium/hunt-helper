@@ -231,13 +231,13 @@ func AddFindAGameReaction(message_id string, guild_id string, user_id string, du
 	})
 }
 
-func GetFindAGameReaction(message_id string, user_id string, guild_id string) *FindAGameReaction {
+func GetFindAGameReaction(user_id string, guild_id string, message_id string) (*FindAGameReaction, error) {
 	var reaction *FindAGameReaction
 	if err := _db.Where("user_id = ?", user_id).Where("guild_id = ?", guild_id).Where("message_id = ?", message_id).Last(&reaction).Error; err != nil {
-		log.Println(err)
-		return reaction
+		// if err := _db.Where("user_id = ?", user_id).Last(&reaction).Error; err != nil {
+		return reaction, err
 	}
-	return reaction
+	return reaction, nil
 }
 
 // find a game
@@ -266,13 +266,22 @@ func GetFindAGame(user_id string, guild_id string) *FindAGameMessage {
 	return findagame
 }
 
-func GetFindAGameByMsgID(message_id string, guild_id string) *FindAGameMessage {
+func GetFindAGameByMsgID(message_id string) (*FindAGameMessage, error) {
 	var findagame *FindAGameMessage
-	if err := _db.Where("message_id = ?", message_id).Where("guild_id = ?", guild_id).Last(&findagame).Error; err != nil {
-		log.Println(err)
-		return findagame
+	// if err := _db.Where("message_id = ?", message_id).Where("guild_id = ?", guild_id).Last(&findagame).Error; err != nil {
+	if err := _db.Where("message_id = ?", message_id).Last(&findagame).Error; err != nil {
+		return findagame, err
 	}
-	return findagame
+	return findagame, nil
+}
+
+func GetFindAGameByUserID(user_id string) (*FindAGameMessage, error) {
+	var findagame *FindAGameMessage
+	// if err := _db.Where("message_id = ?", message_id).Where("guild_id = ?", guild_id).Last(&findagame).Error; err != nil {
+	if err := _db.Where("user_id = ?", user_id).Last(&findagame).Error; err != nil {
+		return findagame, err
+	}
+	return findagame, nil
 }
 
 func GetFindAGameType(dungeon string) (int, int) {
