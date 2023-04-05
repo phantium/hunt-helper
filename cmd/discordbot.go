@@ -72,18 +72,9 @@ func RunDiscordBot() {
 
 	commands.LoadGlobalCommands(session)
 
-	// session.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	// 	switch i.Type {
-	// 	case discordgo.InteractionApplicationCommand:
-	// 		if h, ok := handlers.CommandsHandlers[i.ApplicationCommandData().Name]; ok {
-	// 			h(s, i)
-	// 		}
-	// 	case discordgo.InteractionMessageComponent:
-	// 		if h, ok := handlers.ComponentsHandlers[i.MessageComponentData().CustomID]; ok {
-	// 			h(s, i)
-	// 		}
-	// 	}
-	// })
+	// cleanup messages if necessary
+	commands.DungeonFinderIntegrityCheck(session)
+	handlers.FindAGameStatsPoster(session)
 
 	// capture reactions to messages
 	session.AddHandler(func(s *discordgo.Session, r *discordgo.MessageReactionAdd) {

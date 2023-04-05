@@ -134,6 +134,83 @@ func FindAGameStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
+func FindAGameStatsPoster(s *discordgo.Session) {
+	ticker := time.NewTicker(1 * time.Minute)
+	var board_md5 [16]byte
+	for range ticker.C {
+
+		for _, guild := range s.State.Guilds {
+			var board_message *discordgo.Message
+
+			// get board channel id
+			guild_config := orm.GetGuildConfig(guild.ID)
+			channelID := guild_config.ChannelBoard
+			messageID := guild_config.ChannelBoardPost
+			if channelID == "" {
+				// no channelID configured
+				continue
+			}
+
+			if messageID == "" {
+				embed_message := FindAGameStats_EmbedMessage()
+				embed_message[0].Fields[1] = &discordgo.MessageEmbedField{
+					Name:  ":clock1: Last updated:",
+					Value: string(FindAGameStats_Time()),
+				}
+
+				board_message, err := s.ChannelMessageSendEmbeds(
+					channelID,
+					embed_message,
+				)
+				if err != nil {
+					continue
+				}
+				board_md5 = md5.Sum([]byte(FindAGameStats_Message()))
+				orm.UpdateGuildConfig(guild.ID, map[string]interface{}{"channel_board_post": board_message.ID})
+			} else {
+				// check if our message exists
+				_, err := s.ChannelMessage(channelID, messageID)
+				if err != nil {
+					embed_message := FindAGameStats_EmbedMessage()
+					embed_message[0].Fields[1] = &discordgo.MessageEmbedField{
+						Name:  ":clock1: Last updated:",
+						Value: string(FindAGameStats_Time()),
+					}
+
+					board_message, err = s.ChannelMessageSendEmbeds(
+						channelID,
+						embed_message,
+					)
+					if err != nil {
+						continue
+					}
+					board_md5 = md5.Sum([]byte(FindAGameStats_Message()))
+					orm.UpdateGuildConfig(guild.ID, map[string]interface{}{"channel_board_post": board_message.ID})
+				} else {
+					if board_md5 != md5.Sum([]byte(FindAGameStats_Message())) {
+						embed_message := FindAGameStats_EmbedMessage()
+						embed_message[0].Fields[1] = &discordgo.MessageEmbedField{
+							Name:  ":clock1: Last updated:",
+							Value: string(FindAGameStats_Time()),
+						}
+						board_message, err := s.ChannelMessageEditEmbeds(
+							channelID,
+							messageID,
+							embed_message,
+						)
+						if err != nil {
+							continue
+						}
+						board_md5 = md5.Sum([]byte(FindAGameStats_Message()))
+						orm.UpdateGuildConfig(guild.ID, map[string]interface{}{"channel_board_post": board_message.ID})
+					}
+				}
+			}
+
+		}
+	}
+}
+
 var game_types = map[string]string{
 	"🐉": "Dragon's Dungeon",
 	"🐙": "Kraken's Ship",

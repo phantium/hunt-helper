@@ -20,6 +20,10 @@ var CommandHHChannels = discordgo.ApplicationCommand{
 					Value: "browse",
 				},
 				{
+					Name:  "Dungeon Finder Board Channel",
+					Value: "board",
+				},
+				{
 					Name:  "PlayerID Channel",
 					Value: "playerid",
 				},

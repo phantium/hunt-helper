@@ -543,3 +543,92 @@ func InteractionSelectEvent(s *discordgo.Session, i *discordgo.InteractionCreate
 
 	}
 }
+
+// during startup check integrity of the messages still left in the database
+// remove the messages leftover from the guilds after validating the messages exist
+func DungeonFinderIntegrityCheck(s *discordgo.Session) {
+	// Get all guilds the bot is a part of
+	var guilds []*discordgo.UserGuild
+	var lastGuildID string
+	for {
+		partialGuilds, err := s.UserGuilds(100, lastGuildID, "")
+		if err != nil {
+			// handle error
+			return
+		}
+		guilds = append(guilds, partialGuilds...)
+		if len(partialGuilds) < 100 {
+			break
+		}
+		lastGuildID = partialGuilds[len(partialGuilds)-1].ID
+	}
+
+	// Loop over each guild
+	log.Info("Starting Dungeon Finder integrity check.. hang tight!")
+	for _, guild := range guilds {
+		guild_config := orm.GetGuildConfig(guild.ID)
+		if guild_config.ChannelBrowse == "" {
+			continue
+		}
+
+		// Get the specified channel in the guild
+		channel, err := s.State.Channel(guild_config.ChannelBrowse)
+		if err != nil {
+			// handle error
+			continue
+		}
+
+		// Skip the guild if the channel is not in it
+		if channel.GuildID != guild.ID {
+			continue
+		}
+
+		// Get the bot's messages in the channel
+		var messages []*discordgo.Message
+		var lastMessageID string
+		for {
+			partialMessages, err := s.ChannelMessages(channel.ID, 100, lastMessageID, "", "")
+			if err != nil {
+				// handle error
+				continue
+			}
+			messages = append(messages, partialMessages...)
+			if len(partialMessages) < 100 {
+				break
+			}
+			lastMessageID = partialMessages[len(partialMessages)-1].ID
+		}
+
+		apology_text := "Hello! I was just restarted.\nI'm cleaning up LFG messages no longer tied to an interaction.\nPlease repost if your LFG was deleted.\nThank you!\n\n*`this message self destructs in 2 minutes`*"
+		apology_msg, err := s.ChannelMessageSend(guild_config.ChannelBrowse, apology_text)
+		if err != nil {
+			// did the channel disappear?
+			continue
+		}
+		time.AfterFunc(2*time.Minute, func() {
+			s.ChannelMessageDelete(guild_config.ChannelBrowse, apology_msg.ID)
+		})
+
+		// Loop over each message
+		for _, message := range messages {
+			// Delete the message if it was created by the bot
+			if message.Author.ID == s.State.User.ID {
+				// delete the message
+				err := s.ChannelMessageDelete(channel.ID, message.ID)
+				if err != nil {
+					continue
+				}
+
+				// check if it still exists
+				_, err = orm.GetFindAGameByMsgID(message.ID)
+				if err != nil {
+					continue
+				} else {
+					// delete from orm
+					orm.DeleteFindAGameByMessageID(message.ID)
+				}
+			}
+		}
+	}
+	log.Info("Done with Dungeon Finder cleanup")
+}

@@ -264,6 +264,10 @@ func DeleteFindAGame(user_id string, guild_id string) {
 	_db.Unscoped().Where("user_id = ?", user_id).Where("guild_id = ?", guild_id).Delete(&FindAGameMessage{})
 }
 
+func DeleteFindAGameByMessageID(message_id string) {
+	_db.Unscoped().Where("message_id = ?", message_id).Delete(&FindAGameMessage{})
+}
+
 func GetFindAGame(user_id string) *FindAGameMessage {
 	var findagame *FindAGameMessage
 	if err := _db.Where("user_id = ?", user_id).Last(&findagame).Error; err != nil {
