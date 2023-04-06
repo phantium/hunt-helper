@@ -31,40 +31,40 @@ func FindAGameStats_Time() string {
 }
 
 func FindAGameStats_Message() string {
-	dragon_runs, dragon_carries := orm.GetFindAGameType("dragon")
-	kraken_runs, kraken_carries := orm.GetFindAGameType("kraken")
-	yeti_runs, yeti_carries := orm.GetFindAGameType("yeti")
-	maze_runs, maze_carries := orm.GetFindAGameType("maze")
-	abyssal_runs, abyssal_carries := orm.GetFindAGameType("abyssal")
+	dragon_runs, dragon_carries, dragon_carry_offers := orm.GetFindAGameType("dragon")
+	kraken_runs, kraken_carries, kraken_carry_offers := orm.GetFindAGameType("kraken")
+	yeti_runs, yeti_carries, yeti_carry_offers := orm.GetFindAGameType("yeti")
+	maze_runs, maze_carries, maze_carry_offers := orm.GetFindAGameType("maze")
+	abyssal_runs, abyssal_carries, abyssal_carry_offers := orm.GetFindAGameType("abyssal")
 	members_count := orm.GetMembersCount()
 	message_template := "**Requests Board**\n" +
 		"Current open requests count for dungeon runs and carries:\n" +
 		"**Players registered:** " + string(members_count) +
 		"\n\n" +
-		"**Dragon:** " + fmt.Sprintf("Runs: %d, Carries: %d", dragon_runs, dragon_carries) +
-		"\n**Kraken:** " + fmt.Sprintf("Runs: %d, Carries: %d", kraken_runs, kraken_carries) +
-		"\n**Yeti:** " + fmt.Sprintf("Runs: %d, Carries: %d", yeti_runs, yeti_carries) +
-		"\n**Maze:** " + fmt.Sprintf("Runs: %d, Carries: %d", maze_runs, maze_carries) +
-		"\n**Abyssal:** " + fmt.Sprintf("Runs: %d, Carries: %d", abyssal_runs, abyssal_carries)
+		"**Dragon:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", dragon_runs, dragon_carries, dragon_carry_offers) +
+		"\n**Kraken:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", kraken_runs, kraken_carries, kraken_carry_offers) +
+		"\n**Yeti:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", yeti_runs, yeti_carries, yeti_carry_offers) +
+		"\n**Maze:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", maze_runs, maze_carries, maze_carry_offers) +
+		"\n**Abyssal:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", abyssal_runs, abyssal_carries, abyssal_carry_offers)
 	return message_template
 }
 
 func FindAGameStats_EmbedMessage() []*discordgo.MessageEmbed {
-	dragon_runs, dragon_carries := orm.GetFindAGameType("dragon")
-	kraken_runs, kraken_carries := orm.GetFindAGameType("kraken")
-	yeti_runs, yeti_carries := orm.GetFindAGameType("yeti")
-	maze_runs, maze_carries := orm.GetFindAGameType("maze")
-	abyssal_runs, abyssal_carries := orm.GetFindAGameType("abyssal")
+	dragon_runs, dragon_carries, dragon_carry_offers := orm.GetFindAGameType("dragon")
+	kraken_runs, kraken_carries, kraken_carry_offers := orm.GetFindAGameType("kraken")
+	yeti_runs, yeti_carries, yeti_carry_offers := orm.GetFindAGameType("yeti")
+	maze_runs, maze_carries, maze_carry_offers := orm.GetFindAGameType("maze")
+	abyssal_runs, abyssal_carries, abyssal_carry_offers := orm.GetFindAGameType("abyssal")
 	members_count := orm.GetMembersCount()
 	message_embed := []*discordgo.MessageEmbed{
 		{
 			Title: ":scroll: Requests Board",
 			Description: "Current open requests count for dungeon runs and carries:" +
-				"\n\n:dragon: **Dragon:** " + fmt.Sprintf("Runs: %d, Carries: %d", dragon_runs, dragon_carries) +
-				"\n:octopus: **Kraken:** " + fmt.Sprintf("Runs: %d, Carries: %d", kraken_runs, kraken_carries) +
-				"\n:snowman: **Yeti:** " + fmt.Sprintf("Runs: %d, Carries: %d", yeti_runs, yeti_carries) +
-				"\n:european_castle: **Maze:** " + fmt.Sprintf("Runs: %d, Carries: %d", maze_runs, maze_carries) +
-				"\n:smiling_imp: **Abyssal:** " + fmt.Sprintf("Runs: %d, Carries: %d", abyssal_runs, abyssal_carries),
+				"\n\n:dragon: **Dragon:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", dragon_runs, dragon_carries, dragon_carry_offers) +
+				"\n:octopus: **Kraken:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", kraken_runs, kraken_carries, kraken_carry_offers) +
+				"\n:snowman: **Yeti:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", yeti_runs, yeti_carries, yeti_carry_offers) +
+				"\n:european_castle: **Maze:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", maze_runs, maze_carries, maze_carry_offers) +
+				"\n:smiling_imp: **Abyssal:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", abyssal_runs, abyssal_carries, abyssal_carry_offers),
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:  ":video_game: Players registered",
@@ -272,6 +272,7 @@ func ReactToFindAGame(s *discordgo.Session, member_id string, member_id_poster s
 }
 
 func FindAGameEmojiResponse(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
+	log.Info("inside emoji response")
 	guild_info := orm.GetGuild(r.GuildID)
 	// this means we are in the find a game channel, and we care what is being reacted
 

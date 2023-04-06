@@ -9,15 +9,14 @@ import (
 )
 
 const (
-	statusIntervalPeriod = 30 * time.Second
+	statusIntervalPeriod = 60 * time.Minute
 )
 
 var (
 	statusTexts = []string{
-		"hide and seek",
 		"Hunt Royale",
+		"hide and seek",
 	}
-	StatusInterval chan bool
 )
 
 func Ready(session *discordgo.Session, event *discordgo.Ready) {
@@ -26,12 +25,13 @@ func Ready(session *discordgo.Session, event *discordgo.Ready) {
 		log.Warningf("Unable to set status: %s", err.Error())
 	}
 
-	StatusInterval = utils.SetInterval(func() {
+	ticker := time.NewTicker(statusIntervalPeriod)
+	for range ticker.C {
 		err := session.UpdateGameStatus(0, utils.RandomString(statusTexts))
 		if err != nil {
 			log.Warningf("An error occurred while updating the playing message: %s", err.Error())
 		}
-	}, statusIntervalPeriod)
+	}
 
 	log.Infof("[%s:%s] Ready!", session.State.User.Username, session.State.User.ID)
 }

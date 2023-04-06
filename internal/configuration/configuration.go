@@ -12,29 +12,6 @@ type DiscordConfig struct {
 	Discord struct {
 		Token string `yaml:"token"`
 	} `yaml:"discord"`
-	Notifications struct {
-		SlackAPIKey    string `yaml:"slack_api_key"`
-		SlackChannelID string `yaml:"slack_channel_id"`
-	} `yaml:"notifications"`
-	WebServer struct {
-		Host               string `yaml:"host"`
-		Port               string `yaml:"port"`
-		CertificateFile    string `yaml:"certificate_file"`
-		CertificateKeyFile string `yaml:"certificate_key_file"`
-		StaticDir          string `yaml:"static_dir"`
-		TemplatesDir       string `yaml:"templates_dir"`
-	} `yaml:"webserver"`
-	GCP struct {
-		GCPCredentialsFile string `yaml:"gcp_credentials_file"`
-	} `yaml:"gcp"`
-	Storage struct {
-		ResticGCSConfig string `yaml:"restic_gcs_config"`
-		ResticGCSBucket string `yaml:"restic_gcs_bucket"`
-	} `yaml:"storage"`
-	Psono struct {
-		PsonoConfig   string `yaml:"psono_config"`
-		PsonoSecretId string `yaml:"psono_secret_id"`
-	} `yaml:"psono"`
 	Database struct {
 		Username string `yaml:"username"`
 		Password string `yaml:"password"`

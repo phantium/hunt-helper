@@ -20,8 +20,6 @@ var cfg configuration.DiscordConfig
 
 const discord_config string = "discord.yml"
 
-// var reaction_request_time time.Duration = 10
-
 func init() {
 	rootCmd.AddCommand(DiscordBot)
 	configuration.ReadConfig(&cfg, discord_config)
@@ -56,9 +54,9 @@ func RunDiscordBot() {
 
 	// register find a game handlers
 	session.AddHandler(handlers.OnPlayerMessageID)
-	session.AddHandler(handlers.FindAGameStats)
-	session.AddHandler(handlers.ConfigurePlayerChannelID)
-	session.AddHandler(handlers.ConfigureBrowseChannelID)
+	// session.AddHandler(handlers.FindAGameStats)
+	// session.AddHandler(handlers.ConfigurePlayerChannelID)
+	// session.AddHandler(handlers.ConfigureBrowseChannelID)
 	// session.AddHandler(handlers.ConfigureRole)
 
 	session.AddHandler(events.InteractionGlobalCreate)

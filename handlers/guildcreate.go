@@ -26,6 +26,7 @@ func GuildCreate(s *discordgo.Session, gc *discordgo.GuildCreate) {
 	}
 	log.Infof("Joined server with guild ID: %s (Name: %s) (Owner: %s)!", gc.Guild.ID, gc.Guild.Name, gc.Guild.OwnerID)
 
+	commands.UnloadGuildCommands(s, gc)
 	commands.LoadGuildCommands(s, gc)
 
 }

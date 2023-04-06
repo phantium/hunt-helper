@@ -34,21 +34,29 @@ type BoardPost struct {
 
 type GuildConfig struct {
 	gorm.Model
-	GuildID           string `gorm:"unique"`
-	ChannelFindAGame  string
-	ChannelBrowse     string
-	ChannelPlayerID   string
-	ChannelBoard      string
-	ChannelBoardPost  string
-	FAGRequestTime    int `gorm:"default:60"`
-	FAGRequestTimeout int `gorm:"default:60"`
-	RoleDragon        string
-	RoleKraken        string
-	RoleYeti          string
-	RoleMaze          string
-	RoleAbyssal       string
-	RoleCoop          string
-	RoleEvent         string
+	GuildID               string `gorm:"unique"`
+	ChannelFindAGame      string
+	ChannelBrowse         string
+	ChannelPlayerID       string
+	ChannelBoard          string
+	ChannelBoardPost      string
+	FAGRequestTime        int `gorm:"default:60"`
+	FAGRequestTimeout     int `gorm:"default:60"`
+	FAGDungeonSelectLimit int `gorm:"default:3"`
+	RoleDragon            string
+	RoleKraken            string
+	RoleYeti              string
+	RoleMaze              string
+	RoleAbyssal           string
+	RoleCoop              string
+	RoleEvent             string
+	ChannelDragon         string
+	ChannelKraken         string
+	ChannelYeti           string
+	ChannelMaze           string
+	ChannelAbyssal        string
+	ChannelCoop           string
+	ChannelEvent          string
 }
 
 type Guilds struct {
@@ -295,14 +303,15 @@ func GetFindAGameByUserID(user_id string) (*FindAGameMessage, error) {
 	return findagame, nil
 }
 
-func GetFindAGameType(dungeon string) (int, int) {
+func GetFindAGameType(dungeon string) (int, int, int) {
 	// returns counter_run, counter_carry
 	var findagame []*FindAGameMessage
 	var user_ids []string
 	var counter_run int = 0
 	var counter_carry int = 0
+	var counter_carry_offers int = 0
 	if err := _db.Find(&findagame).Error; err != nil {
-		return 0, 0
+		return 0, 0, 0
 	}
 	for _, r := range findagame {
 		if slices.Contains(r.Dungeons, dungeon) && !slices.Contains(user_ids, r.UserID) {
@@ -313,9 +322,12 @@ func GetFindAGameType(dungeon string) (int, int) {
 			if r.RunType == "carry" {
 				counter_carry += 1
 			}
+			if r.RunType == "carry_offer" {
+				counter_carry_offers += 1
+			}
 		}
 	}
-	return counter_run, counter_carry
+	return counter_run, counter_carry, counter_carry_offers
 }
 
 // func GetFindAGameDragon() string {
