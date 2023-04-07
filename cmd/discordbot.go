@@ -14,6 +14,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/slices"
 )
 
 var cfg configuration.DiscordConfig
@@ -70,17 +71,28 @@ func RunDiscordBot() {
 
 	commands.LoadGlobalCommands(session)
 
-	// cleanup messages if necessary
-	commands.DungeonFinderIntegrityCheck(session)
-	handlers.FindAGameStatsPoster(session)
-
 	// capture reactions to messages
 	session.AddHandler(func(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 		guild := orm.GetGuildConfig(r.GuildID)
-		if guild.ChannelBrowse == r.ChannelID {
+		allchannels := []string{}
+
+		allchannels = append(allchannels, guild.ChannelDragon)
+		allchannels = append(allchannels, guild.ChannelKraken)
+		allchannels = append(allchannels, guild.ChannelYeti)
+		allchannels = append(allchannels, guild.ChannelMaze)
+		allchannels = append(allchannels, guild.ChannelAbyssal)
+		allchannels = append(allchannels, guild.ChannelCoop)
+		allchannels = append(allchannels, guild.ChannelEvent)
+
+		if slices.Contains(allchannels, r.ChannelID) {
 			handlers.FindAGameEmojiResponse(s, r)
 		}
 	})
+
+	// cleanup messages if necessary
+	commands.DungeonFinderIntegrityCheck(session)
+	handlers.GetPlayerMessageIDBackLog(session)
+	handlers.FindAGameStatsPoster(session)
 
 	// session.AddHandler(func(s *discordgo.Session, r *discordgo.MessageUpdate))
 

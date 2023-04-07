@@ -16,16 +16,12 @@ var CommandHHChannels = discordgo.ApplicationCommand{
 			Type: discordgo.ApplicationCommandOptionString,
 			Choices: []*discordgo.ApplicationCommandOptionChoice{
 				{
-					Name:  "Dungeon Finder Browse Channel",
-					Value: "browse",
-				},
-				{
 					Name:  "Dungeon Finder Board Channel",
 					Value: "board",
 				},
 				{
 					Name:  "PlayerID Channel",
-					Value: "playerid",
+					Value: "player_id",
 				},
 			},
 			Name:        "channel-type",

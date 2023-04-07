@@ -36,7 +36,7 @@ type GuildConfig struct {
 	gorm.Model
 	GuildID               string `gorm:"unique"`
 	ChannelFindAGame      string
-	ChannelBrowse         string
+	ChannelMultiple       bool `gorm:"default:true"`
 	ChannelPlayerID       string
 	ChannelBoard          string
 	ChannelBoardPost      string
@@ -237,6 +237,10 @@ func GetBoardPost(bp *BoardPost) *BoardPost {
 
 // find a game reaction
 
+func DeleteFindAGameReactions() {
+	_db.Unscoped().Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&FindAGameReaction{})
+}
+
 func AddFindAGameReaction(message_id string, guild_id string, user_id string, dungeon string) {
 	_db.Create(&FindAGameReaction{
 		MessageID: message_id,
@@ -329,87 +333,6 @@ func GetFindAGameType(dungeon string) (int, int, int) {
 	}
 	return counter_run, counter_carry, counter_carry_offers
 }
-
-// func GetFindAGameDragon() string {
-// 	var findagame []*FindAGameMessage
-// 	var user_ids []string
-// 	var counter int = 0
-// 	// if err := _db.Where("created_at BETWEEN ? AND ?", tenminago, now).Find(&findagame).Error; err != nil {
-// 	if err := _db.Find(&findagame).Error; err != nil {
-// 		return "0"
-// 	}
-// 	for _, r := range findagame {
-// 		if slices.Contains(r.Dungeons, "dragon") && !slices.Contains(user_ids, r.UserID) {
-// 			user_ids = append(user_ids, r.UserID)
-// 			counter += 1
-// 		}
-// 	}
-// 	return fmt.Sprint(counter)
-// }
-
-// func GetFindAGameKraken() string {
-// 	var findagame []*FindAGameMessage
-// 	var user_ids []string
-// 	var counter int = 0
-// 	if err := _db.Find(&findagame).Error; err != nil {
-// 		return "0"
-// 	}
-// 	for _, r := range findagame {
-// 		if slices.Contains(r.Dungeons, "kraken") && !slices.Contains(user_ids, r.UserID) {
-// 			user_ids = append(user_ids, r.UserID)
-// 			counter += 1
-// 		}
-// 	}
-// 	return fmt.Sprint(counter)
-// }
-
-// func GetFindAGameYeti() string {
-// 	var findagame []*FindAGameMessage
-// 	var user_ids []string
-// 	var counter int = 0
-// 	if err := _db.Find(&findagame).Error; err != nil {
-// 		return "0"
-// 	}
-// 	for _, r := range findagame {
-// 		if slices.Contains(r.Dungeons, "yeti") && !slices.Contains(user_ids, r.UserID) {
-// 			user_ids = append(user_ids, r.UserID)
-// 			counter += 1
-// 		}
-// 	}
-// 	return fmt.Sprint(counter)
-// }
-
-// func GetFindAGameMaze() string {
-// 	var findagame []*FindAGameMessage
-// 	var user_ids []string
-// 	var counter int = 0
-// 	if err := _db.Find(&findagame).Error; err != nil {
-// 		return "0"
-// 	}
-// 	for _, r := range findagame {
-// 		if slices.Contains(r.Dungeons, "maze") && !slices.Contains(user_ids, r.UserID) {
-// 			user_ids = append(user_ids, r.UserID)
-// 			counter += 1
-// 		}
-// 	}
-// 	return fmt.Sprint(counter)
-// }
-
-// func GetFindAGameAbyssal() string {
-// 	var findagame []*FindAGameMessage
-// 	var user_ids []string
-// 	var counter int = 0
-// 	if err := _db.Find(&findagame).Error; err != nil {
-// 		return "0"
-// 	}
-// 	for _, r := range findagame {
-// 		if slices.Contains(r.Dungeons, "abyssal") && !slices.Contains(user_ids, r.UserID) {
-// 			user_ids = append(user_ids, r.UserID)
-// 			counter += 1
-// 		}
-// 	}
-// 	return fmt.Sprint(counter)
-// }
 
 // common functions
 func GetPlayerID(member_id string) string {

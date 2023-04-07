@@ -244,26 +244,30 @@ func deleteMessageAfterTimeout(s *discordgo.Session, msg *discordgo.Message, req
 	})
 }
 
-func ReactToFindAGame(s *discordgo.Session, member_id string, member_id_poster string, guild *orm.Guilds, game_type string) {
+func ReactToFindAGame(s *discordgo.Session, member_id string, member_id_poster string, guild *orm.Guilds, channel_id string, game_type string) {
 	guild_config := orm.GetGuildConfig(guild.GuildID)
 	player_id, _ := orm.GetMemberWithPlayerID(member_id)
 	if player_id.PlayerID == "" {
 		if guild_config.ChannelPlayerID == "" {
-			noid_msg, err := s.ChannelMessageSend(guild_config.ChannelBrowse, fmt.Sprintf("<@%s> Sorry, but you need to set your Player ID first! However, the server admin has not yet configured the channel!", member_id))
+			noid_msg, err := s.ChannelMessageSend(channel_id, fmt.Sprintf("<@%s> Sorry, but you need to set your Player ID first! However, the server admin has not yet configured the channel!", member_id))
 			if err != nil {
 				return
 			}
 			deleteMessageAfterTimeout(s, noid_msg, 30*time.Second)
 			return
 		}
-		noid_msg, err := s.ChannelMessageSend(guild_config.ChannelBrowse, fmt.Sprintf("<@%s> Sorry, but you need to set your Player ID first! <#%s>", member_id, guild_config.ChannelPlayerID))
+		noid_msg, err := s.ChannelMessageSend(channel_id, fmt.Sprintf("<@%s> Sorry, but you need to set your Player ID first! <#%s>", member_id, guild_config.ChannelPlayerID))
 		if err != nil {
 			return
 		}
 		deleteMessageAfterTimeout(s, noid_msg, 30*time.Second)
 		return
 	}
-	priv_chan, _ := s.UserChannelCreate(member_id_poster)
+	priv_chan, err := s.UserChannelCreate(member_id_poster)
+	if err != nil {
+		// user probably has dms disabled
+		return
+	}
 	msg, err := s.ChannelMessageSend(priv_chan.ID, fmt.Sprintf("Message from server %s:\n<@%s> wants to play a Hunt Royale **%s** with you! :id: %s", guild.GuildName, member_id, game_type, player_id.PlayerID))
 	if err != nil {
 		return
@@ -272,7 +276,6 @@ func ReactToFindAGame(s *discordgo.Session, member_id string, member_id_poster s
 }
 
 func FindAGameEmojiResponse(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
-	log.Info("inside emoji response")
 	guild_info := orm.GetGuild(r.GuildID)
 	// this means we are in the find a game channel, and we care what is being reacted
 
@@ -313,19 +316,19 @@ func FindAGameEmojiResponse(s *discordgo.Session, r *discordgo.MessageReactionAd
 		log.Error(err)
 	}
 	if r.UserID == fag.UserID {
-		msgref := &discordgo.MessageReference{
-			ChannelID: r.ChannelID,
-			MessageID: r.MessageID,
-			GuildID:   r.GuildID,
-		}
-		react_msg, err := s.ChannelMessageSendReply(r.ChannelID, fmt.Sprintf("<@%s> you cannot respond to your own request!", r.UserID), msgref)
-		if err != nil {
-			return
-		}
-		deleteMessageAfterTimeout(s, react_msg, 30*time.Second)
+		// msgref := &discordgo.MessageReference{
+		// 	ChannelID: r.ChannelID,
+		// 	MessageID: r.MessageID,
+		// 	GuildID:   r.GuildID,
+		// }
+		// react_msg, err := s.ChannelMessageSendReply(r.ChannelID, fmt.Sprintf("<@%s> you cannot respond to your own request!", r.UserID), msgref)
+		// if err != nil {
+		// 	return
+		// }
+		// deleteMessageAfterTimeout(s, react_msg, 30*time.Second)
 		return
 	}
-	ReactToFindAGame(s, r.UserID, fag.UserID, guild_info, game_types[r.Emoji.Name])
+	ReactToFindAGame(s, r.UserID, fag.UserID, guild_info, r.ChannelID, game_types[r.Emoji.Name])
 	orm.AddFindAGameReaction(r.MessageID, r.GuildID, r.UserID, game_name[r.Emoji.Name])
 }
 

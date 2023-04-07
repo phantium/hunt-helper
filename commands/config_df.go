@@ -27,6 +27,10 @@ var CommandDFTimeouts = discordgo.ApplicationCommand{
 					Name:  "Dungeon Finder Dungeon Select Limit (1-3)",
 					Value: "fag_dungeon_select_limit",
 				},
+				{
+					Name:  "Dungeon Finder Multiple Channels 0/1, 1 true, 0 false",
+					Value: "channel_multiple",
+				},
 			},
 			Name:        "setting-type",
 			Required:    true,
@@ -114,6 +118,22 @@ func CommandDFTimeoutsHandler(s *discordgo.Session, i *discordgo.InteractionCrea
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: &discordgo.InteractionResponseData{
 					Content: "Value must be between 1 and 3",
+					Flags:   discordgo.MessageFlagsEphemeral,
+				},
+			}
+
+			err := s.InteractionRespond(i.Interaction, response)
+			if err != nil {
+				return
+			}
+			return
+		}
+	case "channel_multiple":
+		if timeout_value > 1 {
+			response := &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: "Value must be 0 or 1",
 					Flags:   discordgo.MessageFlagsEphemeral,
 				},
 			}

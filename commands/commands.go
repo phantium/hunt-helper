@@ -10,11 +10,15 @@ var (
 	global_commands = []*discordgo.ApplicationCommand{
 		&CommandPlayerID,
 		&CommandPlayerIDReverse,
+		&CommandPostPlayerID,
+		&CommandRegisterPlayerID,
 	}
 
 	GlobalCommandHandlers = map[string]func(*discordgo.Session, *discordgo.InteractionCreate){
-		"player_id":         CommandPlayerIDHandler,
-		"player_id_reverse": CommandPlayerIDReverseHandler,
+		"player_id":          CommandPlayerIDHandler,
+		"player_id_reverse":  CommandPlayerIDReverseHandler,
+		"player_id_post":     CommandPostPlayerIDHandler,
+		"player_id_register": CommandRegisterPlayerIDHandler,
 	}
 
 	// guild
