@@ -5,11 +5,14 @@ import (
 	"discordbot/internal/common"
 	"discordbot/internal/orm"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func ConfigureBrowseChannelID(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -31,21 +34,24 @@ func FindAGameStats_Time() string {
 }
 
 func FindAGameStats_Message() string {
-	dragon_runs, dragon_carries, dragon_carry_offers := orm.GetFindAGameType("dragon")
-	kraken_runs, kraken_carries, kraken_carry_offers := orm.GetFindAGameType("kraken")
-	yeti_runs, yeti_carries, yeti_carry_offers := orm.GetFindAGameType("yeti")
-	maze_runs, maze_carries, maze_carry_offers := orm.GetFindAGameType("maze")
-	abyssal_runs, abyssal_carries, abyssal_carry_offers := orm.GetFindAGameType("abyssal")
+	dungeons := []string{"dragon", "kraken", "yeti", "maze", "abyssal"}
+	var stats []string
+
+	caser := cases.Title(language.English)
+	for _, dungeon := range dungeons {
+		runs, carries, carry_offers := orm.GetFindAGameType(dungeon)
+		stats = append(stats, fmt.Sprintf("**%s:** Runs: %d, Carry Requests: %d, Carry Offers: %d",
+			caser.String(dungeon), runs, carries, carry_offers))
+	}
+
 	members_count := orm.GetMembersCount()
-	message_template := "**Requests Board**\n" +
-		"Current open requests count for dungeon runs and carries:\n" +
-		"**Players registered:** " + string(members_count) +
-		"\n\n" +
-		"**Dragon:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", dragon_runs, dragon_carries, dragon_carry_offers) +
-		"\n**Kraken:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", kraken_runs, kraken_carries, kraken_carry_offers) +
-		"\n**Yeti:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", yeti_runs, yeti_carries, yeti_carry_offers) +
-		"\n**Maze:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", maze_runs, maze_carries, maze_carry_offers) +
-		"\n**Abyssal:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", abyssal_runs, abyssal_carries, abyssal_carry_offers)
+
+	message_template := fmt.Sprintf(`**Requests Board**
+Current open requests count for dungeon runs and carries:
+**Players registered:** %s
+
+%s`, members_count, strings.Join(stats, "\n"))
+
 	return message_template
 }
 
@@ -55,6 +61,8 @@ func FindAGameStats_EmbedMessage() []*discordgo.MessageEmbed {
 	yeti_runs, yeti_carries, yeti_carry_offers := orm.GetFindAGameType("yeti")
 	maze_runs, maze_carries, maze_carry_offers := orm.GetFindAGameType("maze")
 	abyssal_runs, abyssal_carries, abyssal_carry_offers := orm.GetFindAGameType("abyssal")
+	event_runs, _, _ := orm.GetFindAGameType("event")
+	coop_runs, _, _ := orm.GetFindAGameType("coop")
 	members_count := orm.GetMembersCount()
 	message_embed := []*discordgo.MessageEmbed{
 		{
@@ -64,7 +72,9 @@ func FindAGameStats_EmbedMessage() []*discordgo.MessageEmbed {
 				"\n:octopus: **Kraken:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", kraken_runs, kraken_carries, kraken_carry_offers) +
 				"\n:snowman: **Yeti:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", yeti_runs, yeti_carries, yeti_carry_offers) +
 				"\n:european_castle: **Maze:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", maze_runs, maze_carries, maze_carry_offers) +
-				"\n:smiling_imp: **Abyssal:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", abyssal_runs, abyssal_carries, abyssal_carry_offers),
+				"\n:smiling_imp: **Abyssal:** " + fmt.Sprintf("Runs: %d, Carry Requests: %d, Carry Offers: %d", abyssal_runs, abyssal_carries, abyssal_carry_offers) +
+				"\n:speech_balloon: **Event:** " + fmt.Sprintf("Runs: %d", event_runs) +
+				"\n:busts_in_silhouette: **Co-Op:** " + fmt.Sprintf("Runs: %d", coop_runs),
 			Fields: []*discordgo.MessageEmbedField{
 				{
 					Name:  ":video_game: Players registered",
@@ -136,7 +146,6 @@ func FindAGameStats(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func FindAGameStatsPoster(s *discordgo.Session) {
 	ticker := time.NewTicker(1 * time.Minute)
-	var board_md5 [16]byte
 	for range ticker.C {
 
 		for _, guild := range s.State.Guilds {
@@ -165,11 +174,11 @@ func FindAGameStatsPoster(s *discordgo.Session) {
 				if err != nil {
 					continue
 				}
-				board_md5 = md5.Sum([]byte(FindAGameStats_Message()))
+				// board_md5 = md5.Sum([]byte(FindAGameStats_Message()))
 				orm.UpdateGuildConfig(guild.ID, map[string]interface{}{"channel_board_post": board_message.ID})
 			} else {
 				// check if our message exists
-				_, err := s.ChannelMessage(channelID, messageID)
+				chan_msg, err := s.ChannelMessage(channelID, messageID)
 				if err != nil {
 					embed_message := FindAGameStats_EmbedMessage()
 					embed_message[0].Fields[1] = &discordgo.MessageEmbedField{
@@ -184,25 +193,32 @@ func FindAGameStatsPoster(s *discordgo.Session) {
 					if err != nil {
 						continue
 					}
-					board_md5 = md5.Sum([]byte(FindAGameStats_Message()))
+					// board_md5 = md5.Sum([]byte(FindAGameStats_Message()))
 					orm.UpdateGuildConfig(guild.ID, map[string]interface{}{"channel_board_post": board_message.ID})
 				} else {
-					if board_md5 != md5.Sum([]byte(FindAGameStats_Message())) {
+					current_msg := []byte(chan_msg.Embeds[0].Description)
+					current_msg_fields := []byte(chan_msg.Embeds[0].Fields[0].Value)
+					current_msg_combined := append(current_msg, current_msg_fields...)
+					new_msg := []byte(FindAGameStats_EmbedMessage()[0].Description)
+					new_msg_fields := []byte(FindAGameStats_EmbedMessage()[0].Fields[0].Value)
+					new_msg_combined := append(new_msg, new_msg_fields...)
+
+					if md5.Sum(current_msg_combined) != md5.Sum(new_msg_combined) {
 						embed_message := FindAGameStats_EmbedMessage()
 						embed_message[0].Fields[1] = &discordgo.MessageEmbedField{
 							Name:  ":clock1: Last updated:",
 							Value: string(FindAGameStats_Time()),
 						}
-						board_message, err := s.ChannelMessageEditEmbeds(
+						_, err := s.ChannelMessageEditEmbeds(
 							channelID,
 							messageID,
 							embed_message,
 						)
 						if err != nil {
+							log.Error(err)
 							continue
 						}
-						board_md5 = md5.Sum([]byte(FindAGameStats_Message()))
-						orm.UpdateGuildConfig(guild.ID, map[string]interface{}{"channel_board_post": board_message.ID})
+						// orm.UpdateGuildConfig(guild.ID, map[string]interface{}{"channel_board_post": board_message.ID})
 					}
 				}
 			}
@@ -217,6 +233,7 @@ var game_types = map[string]string{
 	"⛄": "Yeti's Tundra",
 	"🏰": "Maze",
 	"😈": "Abyssal Maze",
+	"":  "Chaos Dungeon",
 	"💬": "Event",
 	"👥": "Co-Op",
 }
@@ -227,6 +244,7 @@ var game_name = map[string]string{
 	"⛄": "yeti",
 	"🏰": "maze",
 	"😈": "abyssal",
+	"":  "chaos",
 	"💬": "event",
 	"👥": "coop",
 }
@@ -292,7 +310,6 @@ func FindAGameEmojiResponse(s *discordgo.Session, r *discordgo.MessageReactionAd
 
 	// check if user already responded to the message
 	reaction, err := orm.GetFindAGameReaction(r.UserID, r.GuildID, r.MessageID)
-	// reaction, err := orm.GetFindAGameReaction(r.UserID)
 	if err != nil {
 		log.Error(err)
 	}
@@ -316,38 +333,8 @@ func FindAGameEmojiResponse(s *discordgo.Session, r *discordgo.MessageReactionAd
 		log.Error(err)
 	}
 	if r.UserID == fag.UserID {
-		// msgref := &discordgo.MessageReference{
-		// 	ChannelID: r.ChannelID,
-		// 	MessageID: r.MessageID,
-		// 	GuildID:   r.GuildID,
-		// }
-		// react_msg, err := s.ChannelMessageSendReply(r.ChannelID, fmt.Sprintf("<@%s> you cannot respond to your own request!", r.UserID), msgref)
-		// if err != nil {
-		// 	return
-		// }
-		// deleteMessageAfterTimeout(s, react_msg, 30*time.Second)
 		return
 	}
 	ReactToFindAGame(s, r.UserID, fag.UserID, guild_info, r.ChannelID, game_types[r.Emoji.Name])
 	orm.AddFindAGameReaction(r.MessageID, r.GuildID, r.UserID, game_name[r.Emoji.Name])
 }
-
-// func OnMessageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-// 	if m.Author.ID == s.State.User.ID {
-// 		return
-// 	}
-
-// 	// Do not show the notification on the #find-a-game channel
-// 	if m.ChannelID == channel_findagame {
-// 		return
-// 	}
-
-// 	if m.MentionRoles != nil {
-// 		for _, role := range m.MentionRoles {
-// 			// if slices.Contains()
-// 			s.ChannelMessageSend(m.ChannelID, "You mentioned "+roles[role]+" but you're not in #find-a-game!")
-// 		}
-// 	}
-
-// 	// fmt.Println(m.Message)
-// }

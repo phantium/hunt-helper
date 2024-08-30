@@ -27,6 +27,7 @@ var (
 		&CommandDungeonFinderRoles,
 		&CommandHHChannels,
 		&CommandDFTimeouts,
+		&CommandPlayerIDMenu,
 	}
 
 	CommandHandlers = map[string]func(*discordgo.Session, *discordgo.InteractionCreate){
@@ -34,6 +35,7 @@ var (
 		"df_roles":       CommandDungeonFinderRolesHandler,
 		"hh_channels":    CommandHHChannelsHandler,
 		"df_settings":    CommandDFTimeoutsHandler,
+		"player_id_menu": CommandMenuPlayerID,
 	}
 
 	ComponentHandlers = map[string]func(*discordgo.Session, *discordgo.InteractionCreate){
@@ -47,13 +49,16 @@ var (
 		"dungeons_carry":         InteractionDungeonsCarry,
 		"dungeons_provide_carry": InteractionDungeonsProvideCarry,
 		"dungeons_run":           InteractionDungeonsRun,
+		"player_id_registration": InteractionCommandPlayerIDMenu,
+	}
+
+	ModalHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
+		"player_id_registration": PlayerIDEntry,
 	}
 )
 
 func LoadGlobalCommands(s *discordgo.Session) {
-	// log.Info("Loading global commands...")
 	for _, command := range global_commands {
-		// log.Infof("Loaded: %v", command.Name)
 		_, err := s.ApplicationCommandCreate(s.State.User.ID, "", command)
 		if err != nil {
 			log.Warningf("Error loading global command: %s", err.Error())
@@ -62,9 +67,7 @@ func LoadGlobalCommands(s *discordgo.Session) {
 }
 
 func LoadGuildCommands(s *discordgo.Session, gc *discordgo.GuildCreate) {
-	// log.Info("Loading guild commands...")
 	for _, command := range commands {
-		// log.Infof("Loaded: %v", command.Name)
 		_, err := s.ApplicationCommandCreate(s.State.User.ID, gc.Guild.ID, command)
 		if err != nil {
 			log.Warningf("error loading guild command: %s", err.Error())

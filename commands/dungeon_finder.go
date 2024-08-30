@@ -216,17 +216,12 @@ func sendDungeonMessage(s *discordgo.Session, i *discordgo.InteractionCreate, da
 				continue
 			}
 
-			// role_excluded_gametypes := []string{"coop", "event"}
-			// if !slices.Contains(role_excluded_gametypes, gameType) {
-			// 	// if we don't have any roles for the server, just continue
-			// 	if len(roles) == 0 {
-			// 		continue
-			// 	}
-			// 	// if we don't match the requested available roles, just continue
-			// 	if len(data.Values) != len(roles) {
-			// 		continue
-			// 	}
-			// }
+			var member_string string
+			if i.GuildID == guild.ID {
+				member_string = i.Member.Mention()
+			} else {
+				member_string = i.Member.User.String()
+			}
 
 			// Fill in the struct with the necessary variables
 			messageData := struct {
@@ -235,7 +230,7 @@ func sendDungeonMessage(s *discordgo.Session, i *discordgo.InteractionCreate, da
 				Roles    []*discordgo.Role
 				PlayerID string
 			}{
-				Member:   i.Member.Mention(),
+				Member:   member_string,
 				Guild:    origin_guild.Name,
 				Roles:    roles,
 				PlayerID: orm.GetPlayerID(i.Member.User.ID),
@@ -265,8 +260,8 @@ func sendDungeonMessage(s *discordgo.Session, i *discordgo.InteractionCreate, da
 					log.Error(err)
 					continue
 				}
-				orm.AddFindAGame(msg.ID, i.ChannelID, i.GuildID, i.Member.User.ID, named_roles, gameType)
-				deleteGameRequestAfterTimeout(s, i, msg, request_timeout)
+				orm.AddFindAGame(msg.ID, guild_config.ChannelDragon, guild.ID, i.Member.User.ID, named_roles, gameType)
+				deleteGameRequestAfterTimeout(s, i, guild.ID, msg, request_timeout)
 
 				// reaction emoji roles
 				for _, gametype := range data.Values {
@@ -298,6 +293,13 @@ func sendDungeonMessage(s *discordgo.Session, i *discordgo.InteractionCreate, da
 						continue
 					}
 
+					var member_string string
+					if i.GuildID == guild.ID {
+						member_string = i.Member.Mention()
+					} else {
+						member_string = i.Member.User.String()
+					}
+
 					// Fill in the struct with the necessary variables
 					messageData := struct {
 						Member      string
@@ -306,7 +308,7 @@ func sendDungeonMessage(s *discordgo.Session, i *discordgo.InteractionCreate, da
 						Roles       []*discordgo.Role
 						PlayerID    string
 					}{
-						Member:      i.Member.Mention(),
+						Member:      member_string,
 						Guild:       origin_guild.Name,
 						CurrentRole: fetch_role.Mention(),
 						Roles:       roles,
@@ -350,8 +352,8 @@ func sendDungeonMessage(s *discordgo.Session, i *discordgo.InteractionCreate, da
 						log.Error(err)
 						continue
 					}
-					orm.AddFindAGame(msg.ID, channel_mapping[strings.ToLower(named_role)], i.GuildID, i.Member.User.ID, []string{strings.ToLower(named_role)}, gameType)
-					deleteGameRequestAfterTimeout(s, i, msg, request_timeout)
+					orm.AddFindAGame(msg.ID, channel_mapping[strings.ToLower(named_role)], guild.ID, i.Member.User.ID, []string{strings.ToLower(named_role)}, gameType)
+					deleteGameRequestAfterTimeout(s, i, guild.ID, msg, request_timeout)
 
 					// reaction emoji roles
 					err = s.MessageReactionAdd(msg.ChannelID, msg.ID, emojisv2[strings.ToLower(named_role)])
@@ -373,17 +375,17 @@ func sendDungeonMessage(s *discordgo.Session, i *discordgo.InteractionCreate, da
 	}()
 }
 
-func deleteGameEntryAndMessage(s *discordgo.Session, i *discordgo.InteractionCreate, dg_msg *discordgo.Message) {
-	orm.DeleteFindAGame(i.Member.User.ID, i.GuildID)
+func deleteGameEntryAndMessage(s *discordgo.Session, i *discordgo.InteractionCreate, guild_id string, dg_msg *discordgo.Message) {
+	orm.DeleteFindAGame(i.Member.User.ID, guild_id)
 	err := s.ChannelMessageDelete(dg_msg.ChannelID, dg_msg.ID)
 	if err != nil {
 		return
 	}
 }
 
-func deleteGameRequestAfterTimeout(s *discordgo.Session, i *discordgo.InteractionCreate, dg_msg *discordgo.Message, request_timeout time.Duration) {
+func deleteGameRequestAfterTimeout(s *discordgo.Session, i *discordgo.InteractionCreate, guild_id string, dg_msg *discordgo.Message, request_timeout time.Duration) {
 	time.AfterFunc(request_timeout, func() {
-		deleteGameEntryAndMessage(s, i, dg_msg)
+		deleteGameEntryAndMessage(s, i, guild_id, dg_msg)
 	})
 }
 
@@ -723,7 +725,7 @@ func InteractionSelectDungeon(s *discordgo.Session, i *discordgo.InteractionCrea
 		respond := &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content:    "Select your dungeon(s) *up to 3* to run or be carried:",
+				Content:    fmt.Sprintf("Select your dungeon(s) *up to %d* to run or be carried:", guild_config.FAGDungeonSelectLimit),
 				Components: dungeon_components,
 				Flags:      discordgo.MessageFlagsEphemeral,
 			},
@@ -799,7 +801,7 @@ func InteractionDungeonsCarry(s *discordgo.Session, i *discordgo.InteractionCrea
 		respond := &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content:    "Select your dungeon(s) to get carried *up to 3*:",
+				Content:    fmt.Sprintf("Select your dungeon(s) *up to %d* to run or be carried:", guild_config.FAGDungeonSelectLimit),
 				Components: dungeon_components,
 				Flags:      discordgo.MessageFlagsEphemeral,
 			},
@@ -875,7 +877,7 @@ func InteractionDungeonsProvideCarry(s *discordgo.Session, i *discordgo.Interact
 		respond := &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content:    "Select your dungeon(s) provide a carry *up to 3*:",
+				Content:    fmt.Sprintf("Select your dungeon(s) *up to %d* to run or be carried:", guild_config.FAGDungeonSelectLimit),
 				Components: dungeon_components,
 				Flags:      discordgo.MessageFlagsEphemeral,
 			},
@@ -951,7 +953,7 @@ func InteractionDungeonsRun(s *discordgo.Session, i *discordgo.InteractionCreate
 		respond := &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content:    "Select your dungeon(s) to run *up to 3*:",
+				Content:    fmt.Sprintf("Select your dungeon(s) *up to %d* to run or be carried:", guild_config.FAGDungeonSelectLimit),
 				Components: dungeon_components,
 				Flags:      discordgo.MessageFlagsEphemeral,
 			},
@@ -1119,14 +1121,13 @@ func DungeonFinderIntegrityCheck(s *discordgo.Session) {
 						}
 					}
 				}
-
 			}
 
 			// done, remove apology message
 			// s.ChannelMessageDelete(guild_config.ChannelBrowse, apology_msg.ID)
 		}
 		// Delete find a game reactions
-		orm.DeleteFindAGameReactions()
+		// orm.DeleteFindAGameReactions()
 		log.Info("Done with Dungeon Finder integrity check")
 	}()
 }

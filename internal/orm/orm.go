@@ -48,6 +48,7 @@ type GuildConfig struct {
 	RoleYeti              string
 	RoleMaze              string
 	RoleAbyssal           string
+	RoleChaos             string
 	RoleCoop              string
 	RoleEvent             string
 	ChannelDragon         string
@@ -55,6 +56,7 @@ type GuildConfig struct {
 	ChannelYeti           string
 	ChannelMaze           string
 	ChannelAbyssal        string
+	ChannelChaos          string
 	ChannelCoop           string
 	ChannelEvent          string
 }
@@ -191,7 +193,7 @@ func CreateGuild(g *Guilds) {
 }
 
 func DeleteGuild(guild_id string) {
-	_db.Unscoped().Where("guild_id = ?", guild_id).Delete(&Guilds{})
+	_db.Where("guild_id = ?", guild_id).Delete(&Guilds{})
 }
 
 // guild management
@@ -238,7 +240,7 @@ func GetBoardPost(bp *BoardPost) *BoardPost {
 // find a game reaction
 
 func DeleteFindAGameReactions() {
-	_db.Unscoped().Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&FindAGameReaction{})
+	_db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&FindAGameReaction{})
 }
 
 func AddFindAGameReaction(message_id string, guild_id string, user_id string, dungeon string) {
@@ -253,7 +255,6 @@ func AddFindAGameReaction(message_id string, guild_id string, user_id string, du
 func GetFindAGameReaction(user_id string, guild_id string, message_id string) (*FindAGameReaction, error) {
 	var reaction *FindAGameReaction
 	if err := _db.Where("user_id = ?", user_id).Where("guild_id = ?", guild_id).Where("message_id = ?", message_id).Last(&reaction).Error; err != nil {
-		// if err := _db.Where("user_id = ?", user_id).Last(&reaction).Error; err != nil {
 		return reaction, err
 	}
 	return reaction, nil
@@ -273,11 +274,11 @@ func AddFindAGame(message_id string, channel_id string, guild_id string, user_id
 }
 
 func DeleteFindAGame(user_id string, guild_id string) {
-	_db.Unscoped().Where("user_id = ?", user_id).Where("guild_id = ?", guild_id).Delete(&FindAGameMessage{})
+	_db.Where("user_id = ?", user_id).Where("guild_id = ?", guild_id).Delete(&FindAGameMessage{})
 }
 
 func DeleteFindAGameByMessageID(message_id string) {
-	_db.Unscoped().Where("message_id = ?", message_id).Delete(&FindAGameMessage{})
+	_db.Where("message_id = ?", message_id).Delete(&FindAGameMessage{})
 }
 
 func GetFindAGame(user_id string) *FindAGameMessage {
@@ -308,7 +309,6 @@ func GetFindAGameByUserID(user_id string) (*FindAGameMessage, error) {
 }
 
 func GetFindAGameType(dungeon string) (int, int, int) {
-	// returns counter_run, counter_carry
 	var findagame []*FindAGameMessage
 	var user_ids []string
 	var counter_run int = 0
@@ -328,6 +328,9 @@ func GetFindAGameType(dungeon string) (int, int, int) {
 			}
 			if r.RunType == "carry_offer" {
 				counter_carry_offers += 1
+			}
+			if r.RunType == "event" || r.RunType == "coop" {
+				counter_run += 1
 			}
 		}
 	}

@@ -55,11 +55,6 @@ func RunDiscordBot() {
 
 	// register find a game handlers
 	session.AddHandler(handlers.OnPlayerMessageID)
-	// session.AddHandler(handlers.FindAGameStats)
-	// session.AddHandler(handlers.ConfigurePlayerChannelID)
-	// session.AddHandler(handlers.ConfigureBrowseChannelID)
-	// session.AddHandler(handlers.ConfigureRole)
-
 	session.AddHandler(events.InteractionGlobalCreate)
 	session.AddHandler(events.InteractionGuildCreate)
 	session.AddHandler(events.Ready)
@@ -92,13 +87,13 @@ func RunDiscordBot() {
 	// cleanup messages if necessary
 	commands.DungeonFinderIntegrityCheck(session)
 	handlers.GetPlayerMessageIDBackLog(session)
-	handlers.FindAGameStatsPoster(session)
+	// handlers.FindAGameStatsPoster(session)
 
 	// session.AddHandler(func(s *discordgo.Session, r *discordgo.MessageUpdate))
 
 	// Wait for a termination signal from the operating system.
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 	<-sc
 }

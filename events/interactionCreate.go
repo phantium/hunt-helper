@@ -25,5 +25,9 @@ func InteractionGuildCreate(s *discordgo.Session, i *discordgo.InteractionCreate
 		if cmp, ok := commands.ComponentHandlers[i.MessageComponentData().CustomID]; ok {
 			cmp(s, i)
 		}
+	case discordgo.InteractionModalSubmit:
+		if mdl, ok := commands.ModalHandlers[i.ModalSubmitData().CustomID]; ok {
+			mdl(s, i)
+		}
 	}
 }
