@@ -28,15 +28,6 @@ var emojisv2 = map[string]string{
 	"coop":    "👥",
 }
 
-// var emojisv2_id = map[string]string{
-// 	"dragon":  "1090337829499973632",
-// 	"kraken":  "1090338068910837830",
-// 	"yeti":    "1090338180328333462",
-// 	"maze":    "1090338293708759140",
-// 	"abyssal": "1090338381587820575",
-// 	"event":   "1090338557140410429",
-// }
-
 var CommandDungeonFinder = discordgo.ApplicationCommand{
 	Name:        "dungeon_finder",
 	Description: "Hunt Royale Dungeon Finder",
@@ -154,7 +145,7 @@ func sendDungeonMessage(s *discordgo.Session, i *discordgo.InteractionCreate, da
 	var guilds []*discordgo.Guild
 	var lastGuildID string
 	for {
-		partialGuilds, err := s.UserGuilds(100, lastGuildID, "")
+		partialGuilds, err := s.UserGuilds(100, lastGuildID, "", true)
 		if err != nil {
 			// handle error
 			return
@@ -607,6 +598,46 @@ func InteractionDungeonQuestions(s *discordgo.Session, i *discordgo.InteractionC
 	}
 }
 
+func createDungeonSelectComponent(customID string, placeholder string, minValues int, maxValues int) discordgo.MessageComponent {
+	return discordgo.ActionsRow{
+		Components: []discordgo.MessageComponent{
+			discordgo.SelectMenu{
+				CustomID:    customID,
+				Placeholder: placeholder,
+				MinValues:   &minValues,
+				MaxValues:   maxValues,
+				Options: []discordgo.SelectMenuOption{
+					{
+						Label: "Dragon",
+						Value: "Dragon",
+						Emoji: &discordgo.ComponentEmoji{Name: emojisv2["dragon"]},
+					},
+					{
+						Label: "Kraken",
+						Value: "Kraken",
+						Emoji: &discordgo.ComponentEmoji{Name: emojisv2["kraken"]},
+					},
+					{
+						Label: "Yeti",
+						Value: "Yeti",
+						Emoji: &discordgo.ComponentEmoji{Name: emojisv2["yeti"]},
+					},
+					{
+						Label: "Maze",
+						Value: "Maze",
+						Emoji: &discordgo.ComponentEmoji{Name: emojisv2["maze"]},
+					},
+					{
+						Label: "Abyssal",
+						Value: "Abyssal",
+						Emoji: &discordgo.ComponentEmoji{Name: emojisv2["abyssal"]},
+					},
+				},
+			},
+		},
+	}
+}
+
 // handle "select_dungeon"
 func InteractionSelectDungeon(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	guild_config := orm.GetGuildConfig(i.GuildID)
@@ -616,110 +647,9 @@ func InteractionSelectDungeon(s *discordgo.Session, i *discordgo.InteractionCrea
 	if !fagtime.CreatedAt.IsZero() && !time.Now().After(fagtime.CreatedAt.Add(request_time)) {
 		interactionResponseWithMessage(s, i, fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", request_time.Minutes(), time.Since(fagtime.CreatedAt.Add(request_time)).Minutes()))
 	} else {
-		minValues := 1
 		dungeon_components := []discordgo.MessageComponent{
-			discordgo.ActionsRow{
-				Components: []discordgo.MessageComponent{
-					discordgo.SelectMenu{
-						CustomID:    "dungeon_finder_run",
-						Placeholder: "Choose your dungeons for a run:",
-						// This is where confusion comes from. If you don't specify these things you will get single item select.
-						// These fields control the minimum and maximum amount of selected items.
-						MinValues: &minValues,
-						MaxValues: guild_config.FAGDungeonSelectLimit,
-						Options: []discordgo.SelectMenuOption{
-							{
-								Label: "Dragon",
-								Value: "Dragon",
-								// Default works the same for multi-select menus.
-								// Default: false,
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["dragon"],
-								},
-							},
-							{
-								Label: "Kraken",
-								Value: "Kraken",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["kraken"],
-								},
-							},
-							{
-								Label: "Yeti",
-								Value: "Yeti",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["yeti"],
-								},
-							},
-							{
-								Label: "Maze",
-								Value: "Maze",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["maze"],
-								},
-							},
-							{
-								Label: "Abyssal",
-								Value: "Abyssal",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["abyssal"],
-								},
-							},
-						},
-					},
-				},
-			},
-			discordgo.ActionsRow{
-				Components: []discordgo.MessageComponent{
-					discordgo.SelectMenu{
-						CustomID:    "dungeon_finder_carry",
-						Placeholder: "Choose your dungeons for a carry:",
-						// This is where confusion comes from. If you don't specify these things you will get single item select.
-						// These fields control the minimum and maximum amount of selected items.
-						MinValues: &minValues,
-						MaxValues: 3,
-						Options: []discordgo.SelectMenuOption{
-							{
-								Label: "Dragon",
-								Value: "Dragon",
-								// Default works the same for multi-select menus.
-								// Default: false,
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["dragon"],
-								},
-							},
-							{
-								Label: "Kraken",
-								Value: "Kraken",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["kraken"],
-								},
-							},
-							{
-								Label: "Yeti",
-								Value: "Yeti",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["yeti"],
-								},
-							},
-							{
-								Label: "Maze",
-								Value: "Maze",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["maze"],
-								},
-							},
-							{
-								Label: "Abyssal",
-								Value: "Abyssal",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["abyssal"],
-								},
-							},
-						},
-					},
-				},
-			},
+			createDungeonSelectComponent("dungeon_finder_run", "Choose your dungeons for a run:", 1, guild_config.FAGDungeonSelectLimit),
+			createDungeonSelectComponent("dungeon_finder_carry", "Choose your dungeons for a carry:", 1, 3),
 		}
 
 		respond := &discordgo.InteractionResponse{
@@ -743,59 +673,8 @@ func InteractionDungeonsCarry(s *discordgo.Session, i *discordgo.InteractionCrea
 	if !fagtime.CreatedAt.IsZero() && !time.Now().After(fagtime.CreatedAt.Add(request_time)) {
 		interactionResponseWithMessage(s, i, fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", request_time.Minutes(), time.Since(fagtime.CreatedAt.Add(request_time)).Minutes()))
 	} else {
-		minValues := 1
 		dungeon_components := []discordgo.MessageComponent{
-			discordgo.ActionsRow{
-				Components: []discordgo.MessageComponent{
-					discordgo.SelectMenu{
-						CustomID:    "dungeon_finder_carry",
-						Placeholder: "Choose your dungeons to get carried:",
-						// This is where confusion comes from. If you don't specify these things you will get single item select.
-						// These fields control the minimum and maximum amount of selected items.
-						MinValues: &minValues,
-						MaxValues: guild_config.FAGDungeonSelectLimit,
-						Options: []discordgo.SelectMenuOption{
-							{
-								Label: "Dragon",
-								Value: "Dragon",
-								// Default works the same for multi-select menus.
-								// Default: false,
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["dragon"],
-								},
-							},
-							{
-								Label: "Kraken",
-								Value: "Kraken",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["kraken"],
-								},
-							},
-							{
-								Label: "Yeti",
-								Value: "Yeti",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["yeti"],
-								},
-							},
-							{
-								Label: "Maze",
-								Value: "Maze",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["maze"],
-								},
-							},
-							{
-								Label: "Abyssal",
-								Value: "Abyssal",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["abyssal"],
-								},
-							},
-						},
-					},
-				},
-			},
+			createDungeonSelectComponent("dungeon_finder_carry", "Choose your dungeons to get carried:", 1, guild_config.FAGDungeonSelectLimit),
 		}
 
 		respond := &discordgo.InteractionResponse{
@@ -819,59 +698,8 @@ func InteractionDungeonsProvideCarry(s *discordgo.Session, i *discordgo.Interact
 	if !fagtime.CreatedAt.IsZero() && !time.Now().After(fagtime.CreatedAt.Add(request_time)) {
 		interactionResponseWithMessage(s, i, fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", request_time.Minutes(), time.Since(fagtime.CreatedAt.Add(request_time)).Minutes()))
 	} else {
-		minValues := 1
 		dungeon_components := []discordgo.MessageComponent{
-			discordgo.ActionsRow{
-				Components: []discordgo.MessageComponent{
-					discordgo.SelectMenu{
-						CustomID:    "dungeon_finder_provide_carry",
-						Placeholder: "Choose your dungeons to provide a carry:",
-						// This is where confusion comes from. If you don't specify these things you will get single item select.
-						// These fields control the minimum and maximum amount of selected items.
-						MinValues: &minValues,
-						MaxValues: guild_config.FAGDungeonSelectLimit,
-						Options: []discordgo.SelectMenuOption{
-							{
-								Label: "Dragon",
-								Value: "Dragon",
-								// Default works the same for multi-select menus.
-								// Default: false,
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["dragon"],
-								},
-							},
-							{
-								Label: "Kraken",
-								Value: "Kraken",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["kraken"],
-								},
-							},
-							{
-								Label: "Yeti",
-								Value: "Yeti",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["yeti"],
-								},
-							},
-							{
-								Label: "Maze",
-								Value: "Maze",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["maze"],
-								},
-							},
-							{
-								Label: "Abyssal",
-								Value: "Abyssal",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["abyssal"],
-								},
-							},
-						},
-					},
-				},
-			},
+			createDungeonSelectComponent("dungeon_finder_carry", "Choose your dungeons to get carried:", 1, guild_config.FAGDungeonSelectLimit),
 		}
 
 		respond := &discordgo.InteractionResponse{
@@ -895,60 +723,63 @@ func InteractionDungeonsRun(s *discordgo.Session, i *discordgo.InteractionCreate
 	if !fagtime.CreatedAt.IsZero() && !time.Now().After(fagtime.CreatedAt.Add(request_time)) {
 		interactionResponseWithMessage(s, i, fmt.Sprintf("You can request a game every: **%.2f minutes** wait: **%.2f minutes**", request_time.Minutes(), time.Since(fagtime.CreatedAt.Add(request_time)).Minutes()))
 	} else {
-		minValues := 1
 		dungeon_components := []discordgo.MessageComponent{
-			discordgo.ActionsRow{
-				Components: []discordgo.MessageComponent{
-					discordgo.SelectMenu{
-						CustomID:    "dungeon_finder_run",
-						Placeholder: "Choose your dungeons to run:",
-						// This is where confusion comes from. If you don't specify these things you will get single item select.
-						// These fields control the minimum and maximum amount of selected items.
-						MinValues: &minValues,
-						MaxValues: guild_config.FAGDungeonSelectLimit,
-						Options: []discordgo.SelectMenuOption{
-							{
-								Label: "Dragon",
-								Value: "Dragon",
-								// Default works the same for multi-select menus.
-								// Default: false,
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["dragon"],
-								},
-							},
-							{
-								Label: "Kraken",
-								Value: "Kraken",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["kraken"],
-								},
-							},
-							{
-								Label: "Yeti",
-								Value: "Yeti",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["yeti"],
-								},
-							},
-							{
-								Label: "Maze",
-								Value: "Maze",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["maze"],
-								},
-							},
-							{
-								Label: "Abyssal",
-								Value: "Abyssal",
-								Emoji: discordgo.ComponentEmoji{
-									Name: emojisv2["abyssal"],
-								},
-							},
-						},
-					},
-				},
-			},
+			createDungeonSelectComponent("dungeon_finder_run", "Choose your dungeons to run:", 1, guild_config.FAGDungeonSelectLimit),
 		}
+		// minValues := 1
+		// dungeon_components := []discordgo.MessageComponent{
+		// 	discordgo.ActionsRow{
+		// 		Components: []discordgo.MessageComponent{
+		// 			discordgo.SelectMenu{
+		// 				CustomID:    "dungeon_finder_run",
+		// 				Placeholder: "Choose your dungeons to run:",
+		// 				// This is where confusion comes from. If you don't specify these things you will get single item select.
+		// 				// These fields control the minimum and maximum amount of selected items.
+		// 				MinValues: &minValues,
+		// 				MaxValues: guild_config.FAGDungeonSelectLimit,
+		// 				Options: []discordgo.SelectMenuOption{
+		// 					{
+		// 						Label: "Dragon",
+		// 						Value: "Dragon",
+		// 						// Default works the same for multi-select menus.
+		// 						// Default: false,
+		// 						Emoji: &discordgo.ComponentEmoji{
+		// 							Name: emojisv2["dragon"],
+		// 						},
+		// 					},
+		// 					{
+		// 						Label: "Kraken",
+		// 						Value: "Kraken",
+		// 						Emoji: &discordgo.ComponentEmoji{
+		// 							Name: emojisv2["kraken"],
+		// 						},
+		// 					},
+		// 					{
+		// 						Label: "Yeti",
+		// 						Value: "Yeti",
+		// 						Emoji: &discordgo.ComponentEmoji{
+		// 							Name: emojisv2["yeti"],
+		// 						},
+		// 					},
+		// 					{
+		// 						Label: "Maze",
+		// 						Value: "Maze",
+		// 						Emoji: &discordgo.ComponentEmoji{
+		// 							Name: emojisv2["maze"],
+		// 						},
+		// 					},
+		// 					{
+		// 						Label: "Abyssal",
+		// 						Value: "Abyssal",
+		// 						Emoji: &discordgo.ComponentEmoji{
+		// 							Name: emojisv2["abyssal"],
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// }
 
 		respond := &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -970,7 +801,7 @@ func DungeonFinderIntegrityCheck(s *discordgo.Session) {
 		var guilds []*discordgo.UserGuild
 		var lastGuildID string
 		for {
-			partialGuilds, err := s.UserGuilds(100, lastGuildID, "")
+			partialGuilds, err := s.UserGuilds(100, lastGuildID, "", true)
 			if err != nil {
 				// handle error
 				return

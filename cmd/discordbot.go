@@ -55,6 +55,8 @@ func RunDiscordBot() {
 
 	// register find a game handlers
 	session.AddHandler(handlers.OnPlayerMessageID)
+	session.AddHandler(handlers.LeaveServer)
+	session.AddHandler(handlers.ListServers)
 	session.AddHandler(events.InteractionGlobalCreate)
 	session.AddHandler(events.InteractionGuildCreate)
 	session.AddHandler(events.Ready)

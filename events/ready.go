@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	statusIntervalPeriod = 60 * time.Minute
+	statusIntervalPeriod = 5 * time.Minute // Reduced interval for more frequent updates
 )
 
 var (
@@ -20,18 +20,26 @@ var (
 )
 
 func Ready(session *discordgo.Session, event *discordgo.Ready) {
-	err := session.UpdateGameStatus(0, utils.RandomString(statusTexts))
-	if err != nil {
-		log.Warningf("Unable to set status: %s", err.Error())
-	}
-
-	ticker := time.NewTicker(statusIntervalPeriod)
-	for range ticker.C {
-		err := session.UpdateGameStatus(0, utils.RandomString(statusTexts))
+	updateStatus := func() {
+		status := utils.RandomString(statusTexts)
+		err := session.UpdateGameStatus(0, status)
 		if err != nil {
-			log.Warningf("An error occurred while updating the playing message: %s", err.Error())
+			log.Warningf("Unable to set status: %s", err.Error())
+		} else {
+			log.Infof("Updated game status to: %s", status)
 		}
 	}
+
+	// Initial status update
+	updateStatus()
+
+	// Start a goroutine for periodic updates
+	go func() {
+		ticker := time.NewTicker(statusIntervalPeriod)
+		for range ticker.C {
+			updateStatus()
+		}
+	}()
 
 	log.Infof("[%s:%s] Ready!", session.State.User.Username, session.State.User.ID)
 }

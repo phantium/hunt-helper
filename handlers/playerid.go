@@ -96,7 +96,7 @@ func GetPlayerMessageIDBackLog(s *discordgo.Session) {
 	var guilds []*discordgo.UserGuild
 	var lastGuildID string
 	for {
-		partialGuilds, err := s.UserGuilds(100, lastGuildID, "")
+		partialGuilds, err := s.UserGuilds(100, lastGuildID, "", true)
 		if err != nil {
 			// handle error
 			return
