@@ -49,6 +49,7 @@ type GuildConfig struct {
 	RoleMaze              string
 	RoleAbyssal           string
 	RoleChaos             string
+	RoleDarkForest        string
 	RoleCoop              string
 	RoleEvent             string
 	ChannelDragon         string
@@ -57,6 +58,7 @@ type GuildConfig struct {
 	ChannelMaze           string
 	ChannelAbyssal        string
 	ChannelChaos          string
+	ChannelDarkForest     string
 	ChannelCoop           string
 	ChannelEvent          string
 }

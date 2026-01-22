@@ -1,0 +1,16 @@
+discord:
+  token: REPLACE_WITH_YOUR_DISCORD_BOT_TOKEN
+
+database:
+  username: discordbot
+  database: discordbot
+  password: REPLACE_WITH_YOUR_DATABASE_PASSWORD
+  host: 127.0.0.1
+  port: 3306
+  timeout: 10s
+
+# Example MySQL commands to create the database and user:
+#
+# CREATE DATABASE discordbot;
+# CREATE USER 'discordbot'@'127.0.0.1' IDENTIFIED BY 'REPLACE_WITH_YOUR_DATABASE_PASSWORD';
+# GRANT ALL PRIVILEGES ON discordbot.* TO 'discordbot'@'127.0.0.1';

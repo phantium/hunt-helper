@@ -819,13 +819,15 @@ func DungeonFinderIntegrityCheck(s *discordgo.Session) {
 			guild_config := orm.GetGuildConfig(guild.ID)
 
 			channel_mapping := map[string]string{
-				"dragon":  guild_config.ChannelDragon,
-				"kraken":  guild_config.ChannelKraken,
-				"yeti":    guild_config.ChannelYeti,
-				"maze":    guild_config.ChannelMaze,
-				"abyssal": guild_config.ChannelAbyssal,
-				"coop":    guild_config.ChannelCoop,
-				"event":   guild_config.ChannelEvent,
+				"dragon":     guild_config.ChannelDragon,
+				"kraken":     guild_config.ChannelKraken,
+				"yeti":       guild_config.ChannelYeti,
+				"maze":       guild_config.ChannelMaze,
+				"abyssal":    guild_config.ChannelAbyssal,
+				"chaos":      guild_config.ChannelChaos,
+				"darkforest": guild_config.ChannelDarkForest,
+				"coop":       guild_config.ChannelCoop,
+				"event":      guild_config.ChannelEvent,
 			}
 
 			if !guild_config.ChannelMultiple {
@@ -858,18 +860,6 @@ func DungeonFinderIntegrityCheck(s *discordgo.Session) {
 					lastMessageID = partialMessages[len(partialMessages)-1].ID
 				}
 
-				// if len(messages) > 0 {
-				// 	apology_text := "Hello! I was just restarted.\nI'm cleaning up LFG messages no longer tied to an interaction.\nPlease repost if your LFG was deleted.\nThank you!"
-				// 	apology_msg, err := s.ChannelMessageSend(guild_config.ChannelDragon, apology_text)
-				// 	if err != nil {
-				// 		// did the channel disappear?
-				// 		continue
-				// 	}
-				// 	time.AfterFunc(2*time.Minute, func() {
-				// 		s.ChannelMessageDelete(guild_config.ChannelDragon, apology_msg.ID)
-				// 	})
-				// }
-
 				// Loop over each message
 				for _, message := range messages {
 					// Delete the message if it was created by the bot
@@ -892,7 +882,6 @@ func DungeonFinderIntegrityCheck(s *discordgo.Session) {
 				}
 			} else {
 				// we have multiple channels
-				// log.Infof("Guild: %s has more than one browse channel", guild.ID)
 
 				// Get the bot's messages in the channel
 				var messages []*discordgo.Message
@@ -905,7 +894,6 @@ func DungeonFinderIntegrityCheck(s *discordgo.Session) {
 						continue
 					}
 
-					// log.Infof("looping over %s", channel_id)
 					for {
 						partialMessages, err := s.ChannelMessages(channel_id, 100, lastMessageID, "", "")
 						if err != nil {
@@ -919,17 +907,6 @@ func DungeonFinderIntegrityCheck(s *discordgo.Session) {
 						lastMessageID = partialMessages[len(partialMessages)-1].ID
 					}
 
-					// if len(messages) > 0 {
-					// 	apology_text := "Hello! I was just restarted.\nI'm cleaning up LFG messages no longer tied to an interaction.\nPlease repost if your LFG was deleted.\nThank you!"
-					// 	apology_msg, err := s.ChannelMessageSend(channel_id, apology_text)
-					// 	if err != nil {
-					// 		// did the channel disappear?
-					// 		continue
-					// 	}
-					// 	time.AfterFunc(2*time.Minute, func() {
-					// 		s.ChannelMessageDelete(channel_id, apology_msg.ID)
-					// 	})
-					// }
 				}
 
 				// Loop over each message
@@ -953,9 +930,6 @@ func DungeonFinderIntegrityCheck(s *discordgo.Session) {
 					}
 				}
 			}
-
-			// done, remove apology message
-			// s.ChannelMessageDelete(guild_config.ChannelBrowse, apology_msg.ID)
 		}
 		// Delete find a game reactions
 		// orm.DeleteFindAGameReactions()

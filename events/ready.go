@@ -15,7 +15,13 @@ const (
 var (
 	statusTexts = []string{
 		"Hunt Royale",
-		"hide and seek",
+		"Dark Forest",
+		"Dragon's Dungeon",
+		"Kraken's Ship",
+		"Yeti's Tundra",
+		"Maze",
+		"Abyssal Maze",
+		"Chaos Dungeon",
 	}
 )
 
