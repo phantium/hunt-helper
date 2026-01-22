@@ -1,13 +1,37 @@
-# hunt-helper
-Hunt Royale Discord Hunt Helper
+# Hunt Royale Discord Hunt Helper
 
-A Discord bot that was used by the official Hunt Royale Discord server.
-Now it's open source and only to demonstrate what has been done previously.
+A Discord bot originally developed for the official Hunt Royale Discord server to facilitate global matchmaking and cross-server game posting.
 
-The purpose of this project was for players to be able to find games, which was then posted across multiple discord servers. The post would include the players in-game ID and the game mode they were looking to play.
+> [!NOTE]
+> This project is now open source for demonstration purposes only. The bot is no longer online, and all credentials (tokens, database passwords) have been rotated.
 
-I no longer intend to use the bot as is and it is no longer online.
-It's simply a project to showcase my Go skills.
-It was not written using AI, it was written by me from scratch.
+## Project Overview
 
-The full code history is present, with the inclusion of bot tokens and database credentials which have all been rotated and are no longer in use.
+The main purpose of this bot was to help players find games ("Hunts") more easily. It featured a system where players could request a game, and the bot would post this request across multiple Discord servers, including the player's in-game ID and the specific game mode they wanted to play.
+
+## Features
+
+*   **Dungeon Finder**: The core feature that allowed automated group finding and posting across servers.
+*   **Player ID Registry**: A system to register and look up player game IDs, making it easier to connect in-game.
+*   **Cross-Server Communication**: bridged the gap between different community servers.
+
+## Tech Stack
+
+This project is built using:
+
+*   **Language**: Go (Golang) 1.23
+*   **Discord Library**: [DiscordGo](https://github.com/bwmarrin/discordgo)
+*   **Database**: MySQL with [GORM](https://gorm.io/)
+*   **CLI Framework**: [Cobra](https://github.com/spf13/cobra)
+*   **Logging**: Logrus
+
+## Project Structure
+
+*   `cmd/`: Entry point for the application (CLI commands).
+*   `commands/`: Contains the logic for the bot's slash commands and interactions.
+*   `handlers/`: Event handlers for Discord events (messages, interactions, etc.).
+*   `internal/`: Internal packages and utilities.
+
+## Disclaimer
+
+I no longer maintain or run this bot. This repository serves as a portfolio piece to showcase my skills in Go and Discord bot development. It was written entirely from scratch without the use of AI generation.
