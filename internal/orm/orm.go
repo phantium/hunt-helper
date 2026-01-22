@@ -19,12 +19,6 @@ type PlayerIDs struct {
 	PlayerID string
 }
 
-// type DungeonFinders struct {
-// 	gorm.Model
-// 	MemberID string `gorm:"unique"`
-// 	Dungeons string
-// }
-
 type BoardPost struct {
 	gorm.Model
 	MessageID string `gorm:"unique"`

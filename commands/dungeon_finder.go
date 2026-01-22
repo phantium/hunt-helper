@@ -726,60 +726,6 @@ func InteractionDungeonsRun(s *discordgo.Session, i *discordgo.InteractionCreate
 		dungeon_components := []discordgo.MessageComponent{
 			createDungeonSelectComponent("dungeon_finder_run", "Choose your dungeons to run:", 1, guild_config.FAGDungeonSelectLimit),
 		}
-		// minValues := 1
-		// dungeon_components := []discordgo.MessageComponent{
-		// 	discordgo.ActionsRow{
-		// 		Components: []discordgo.MessageComponent{
-		// 			discordgo.SelectMenu{
-		// 				CustomID:    "dungeon_finder_run",
-		// 				Placeholder: "Choose your dungeons to run:",
-		// 				// This is where confusion comes from. If you don't specify these things you will get single item select.
-		// 				// These fields control the minimum and maximum amount of selected items.
-		// 				MinValues: &minValues,
-		// 				MaxValues: guild_config.FAGDungeonSelectLimit,
-		// 				Options: []discordgo.SelectMenuOption{
-		// 					{
-		// 						Label: "Dragon",
-		// 						Value: "Dragon",
-		// 						// Default works the same for multi-select menus.
-		// 						// Default: false,
-		// 						Emoji: &discordgo.ComponentEmoji{
-		// 							Name: emojisv2["dragon"],
-		// 						},
-		// 					},
-		// 					{
-		// 						Label: "Kraken",
-		// 						Value: "Kraken",
-		// 						Emoji: &discordgo.ComponentEmoji{
-		// 							Name: emojisv2["kraken"],
-		// 						},
-		// 					},
-		// 					{
-		// 						Label: "Yeti",
-		// 						Value: "Yeti",
-		// 						Emoji: &discordgo.ComponentEmoji{
-		// 							Name: emojisv2["yeti"],
-		// 						},
-		// 					},
-		// 					{
-		// 						Label: "Maze",
-		// 						Value: "Maze",
-		// 						Emoji: &discordgo.ComponentEmoji{
-		// 							Name: emojisv2["maze"],
-		// 						},
-		// 					},
-		// 					{
-		// 						Label: "Abyssal",
-		// 						Value: "Abyssal",
-		// 						Emoji: &discordgo.ComponentEmoji{
-		// 							Name: emojisv2["abyssal"],
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// }
 
 		respond := &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
